@@ -36,6 +36,7 @@ class Article:
     def less_write(self, window, x, y):
         '''write to curses screen for small list page
 
+         v number should already be there. x,y is start of title
         [#] title, bold
             author, dim, all or et al.
 
