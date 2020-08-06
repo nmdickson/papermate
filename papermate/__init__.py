@@ -1,3 +1,7 @@
+import curses as cs
+
+import interface
+
 
 class Article:
 
@@ -32,24 +36,32 @@ class Article:
         # title
         self.title = entry.title
 
-    # TODO function name
-    def less_write(self, window, x, y):
-        '''write to curses screen for small list page
 
-         v number should already be there. x,y is start of title
-        [#] title, bold
-            author, dim, all or et al.
+def controller(screen):
 
-            abstract, 400 chars, wrapped
-        '''
+    self.screen = screen
+
+    self.init_screen()
+
+    while True:
+
+        cmd = screen.getch()
+
+        if cmd in COMMANDS:
+
+            self.command(cmd)
+
+        elif cmd in range(NUM_ARTICLES):
+            self.go_to_detailed
+
+        # elif cmd in exit_cmds:
+        #     # do quitty stuff 
+        #     pass
+
+        else:
+            continue
 
 
+if __name__ == '__main__':
+    cs.wrapper(interface.Interface().mainloop)
 
-    def more_write(self, window, x, y):
-        '''write to curses screen for more info page
-
-        title, bold
-        author, dim, all
-
-        \t, abstract, 400 chars, wrapped
-        '''
