@@ -74,7 +74,7 @@ class Article:
         self.abstract = entry.summary.replace('\n', '')
 
         # title
-        self.title = entry.title
+        self.title = entry.title.replace('\n ', '')
 
     def download(self):
         pass
@@ -141,7 +141,9 @@ class CommandBar:
         self.draw_cmdbar()
 
     def draw_cmdbar(self):
-        pass
+        self.window.addstr(0, 1, 'THIS IS COMMAND BAR')
+
+        self.window.refresh()
 
 
 def controller(screen):
@@ -151,6 +153,8 @@ def controller(screen):
     # ----------------------------------------------------------------------
     # Screen initialization
     # ----------------------------------------------------------------------
+
+    cs.curs_set(0)
 
     # get info about total screen size, for sizing of windows
     height, width = screen.getmaxyx()
