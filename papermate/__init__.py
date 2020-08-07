@@ -71,7 +71,7 @@ class Article:
         self.pub_date = entry.updated_parsed
 
         # abstract
-        self.abstract = entry.summary.replace('\n', '')
+        self.abstract = entry.summary.replace('\n', ' ')
 
         # title
         self.title = entry.title.replace('\n ', '')
@@ -121,11 +121,13 @@ class TitleBar:
 
     def draw_titlebar(self):
 
-        # title of article in detailedview, category in listview
-        self.window.addstr(0, 1, self.title)
+        self.window.clear()
 
         # program title and version  TODO grab version from setup.py
-        self.window.addstr(0, self.width // 2, self.version)
+        self.window.addstr(0, 1, self.version)
+
+        # title of article in detailedview, category in listview
+        self.window.addstr(0, (self.width - len(self.title)) // 2, self.title)
 
         # current date
         now = datetime.datetime.now().strftime('%d-%m-%Y ')
@@ -199,7 +201,7 @@ def controller(screen):
             if cmd in ART_CHOOSE:
                 view = 'detailed'
 
-                current_article = articles[chr(cmd)]
+                current_article = articles[int(chr(cmd))]
 
                 titlebar.title = f'Article Details'
 

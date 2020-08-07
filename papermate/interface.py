@@ -11,7 +11,7 @@ def draw_listview(window, articles):
     for ind, article in enumerate(articles):
 
         # TODO the 5 depends on text wrapping, figure it out
-        x, y = 3, 2 + ind * 10
+        x, y = 10, 2 + ind * 10
 
         marker = f'[{ind}] '
 
@@ -25,7 +25,7 @@ def draw_listview(window, articles):
         window.addstr(y + 1, x, article.authors[0] + ' et al.', cs.A_DIM)
 
         # TODO use textwrapper as well, to avoid splitting words
-        abs_win = window.subwin(6, width - 20, y + 3, x)
+        abs_win = window.subwin(6, width - 30, y + 3, x)
         abs_win.addstr(0, 0, article.abstract[:400] + '...')
 
 
