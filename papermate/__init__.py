@@ -1,9 +1,13 @@
 import datetime
 import curses as cs
+import logging
 
 import interface
 
 import feedparser as fp
+
+
+logging.basicConfig(filename='pmate.log', filemode='w', level=logging.DEBUG)
 
 
 CATEGORIES = ('astro-ph', 'astro-ph.CO', 'astro-ph.EP', 'astro-ph.GA',
@@ -37,6 +41,8 @@ class Article:
     def __init__(self, entry):
         '''`entry` is single "entries" dict from feedparser response'''
 
+        logging.debug(f'{entry=}')
+
         # id
         self.id = entry.id.split('/')[-1]
 
@@ -50,11 +56,16 @@ class Article:
         # parse extra links
         for link in entry.links:
 
-            if link.title == 'pdf':
-                self.pdf_url = link.href
+            try:
 
-            if link.title == 'doi':
-                self.doi_url = link.href
+                if link.title == 'pdf':
+                    self.pdf_url = link.href
+
+                if link.title == 'doi':
+                    self.doi_url = link.href
+
+            except AttributeError:
+                self.abs_url = link.href
 
         # publishing date
         self.pub_date = entry.updated_parsed
@@ -72,7 +83,7 @@ class Article:
         pass
 
 
-def get_articles(self, cat=DEFAULT_CAT):
+def get_articles(cat=DEFAULT_CAT):
 
     # TODO if like "astro-ph", need to do OR with all subcats
     if isinstance(cat, (list, tuple, set)):
@@ -89,32 +100,36 @@ def get_articles(self, cat=DEFAULT_CAT):
 
 class TitleBar:
 
-    def __setattr__(self, name, value):
-        super().__setattr__(name, value)
+    @property
+    def title(self):
+        return self._title
 
+    @title.setter
+    def title(self, value):
+        self._title = value
         self.draw_titlebar()
 
     def __init__(self, window):
 
         self.window = window
 
-        self.title = ''
+        _, self.width = window.getmaxyx()
 
         self.version = 'papermate (0.0.1)'
 
-        self.draw_titlebar(window)
+        self.title = ''
 
     def draw_titlebar(self):
 
         # title of article in detailedview, category in listview
-        self.window.addstr(1, 0, self.title)
+        self.window.addstr(0, 1, self.title)
 
         # program title and version  TODO grab version from setup.py
         self.window.addstr(0, self.width // 2, self.version)
 
         # current date
         now = datetime.datetime.now().strftime('%d-%m-%Y ')
-        self.window.addstr(0, self.width - len(now), now)
+        self.window.addstr(0, self.width - len(now) - 1, now)
 
         self.window.refresh()
 
@@ -131,6 +146,8 @@ class CommandBar:
 
 def controller(screen):
 
+    logging.info('starting log')
+
     # ----------------------------------------------------------------------
     # Screen initialization
     # ----------------------------------------------------------------------
@@ -141,7 +158,7 @@ def controller(screen):
     title_window = screen.subwin(1, width, 0, 0)
     titlebar = TitleBar(title_window)
 
-    cmd_window = screen.subwin(1, width, height, 0)
+    cmd_window = screen.subwin(1, width - 1, height - 1, 0)
     cmdbar = CommandBar(cmd_window)
 
     content_window = screen.subwin(height - 2, width, 1, 0)
