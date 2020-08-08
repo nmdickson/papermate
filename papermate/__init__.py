@@ -115,7 +115,7 @@ class TitleBar:
 
         _, self.width = window.getmaxyx()
 
-        self.version = 'papermate (0.0.1)'
+        self.version = 'papermate (0.1)'
 
         self.title = ''
 
@@ -139,13 +139,62 @@ class TitleBar:
 class CommandBar:
 
     def __init__(self, window):
-        self.window = window
-        self.draw_cmdbar()
+        height, width = window.getmaxyx()
+        self.centre = width // 4
 
-    def draw_cmdbar(self):
-        self.window.addstr(0, 1, 'THIS IS COMMAND BAR')
+        self._command_win = window.derwin(1, width // 2 - 1, 0, 0)
+        self._status_win = window.derwin(1, width // 2, 0, width // 2)
+        window.bkgd('|')
 
-        self.window.refresh()
+        self.commands = {}
+        self.status = ''
+
+        self.draw_commands()
+        self.draw_status()
+
+    @property
+    def commands(self):
+        return self._commands
+
+    @commands.setter
+    def commands(self, value):
+        '''dict of key and description'''
+        # TODO check length
+        self._commands = value
+        self.draw_commands()
+
+    def draw_commands(self):
+
+        self._command_win.clear()
+
+        # TODO centre commands
+        # x0 = self.centre - len(self.commands) // 2
+        x = 2
+        for key, desc in self.commands.items():
+            self._command_win.addstr(0, x, key, cs.A_STANDOUT)
+            x += len(key) + 1
+            self._command_win.addstr(0, x, desc)
+            x += len(desc) + 2
+
+        self._command_win.refresh()
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        self._status = value
+        self.draw_status()
+
+    def draw_status(self):
+
+        self._status_win.clear()
+
+        x = self.centre - len(self.status) // 2
+
+        self._status_win.addstr(0, x, self.status)
+        self._status_win.refresh()
 
 
 def controller(screen):
@@ -181,6 +230,8 @@ def controller(screen):
     view = 'list'
 
     titlebar.title = f'Articles List (cat:{DEFAULT_CAT})'
+    cmdbar.commands = {'z/x': 'Next/Prev Category', 'c': 'Choose Category'}
+    cmdbar.status = 'Select an article...'
 
     interface.draw_listview(content_window, articles)
 
@@ -204,6 +255,9 @@ def controller(screen):
                 current_article = articles[int(chr(cmd))]
 
                 titlebar.title = f'Article Details'
+                cmdbar.commands = {'d': 'Download', 'o': 'View online',
+                                   'q': 'return'}
+                cmdbar.status = ''
 
                 interface.draw_detailedview(content_window, current_article)
 
@@ -214,6 +268,9 @@ def controller(screen):
                 current_article = None
 
                 titlebar.title = f'Articles List (cat:{CATEGORIES[cat_ind]})'
+                cmdbar.commands = {'z/x': 'Next/Prev Category',
+                                   'c': 'Choose Category'}
+                cmdbar.status = 'Select an article...'
 
                 interface.draw_listview(content_window, articles)
 
