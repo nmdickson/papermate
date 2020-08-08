@@ -218,18 +218,32 @@ def controller(screen):
                 interface.draw_listview(content_window, articles)
 
             # # category changes
-            # elif cmd == CAT_UP:
-            #     cat_ind += 1
-            # elif cmd == CAT_DOWN:
-            #     cat_ind -= 1
-            # elif cmd == CAT_CHOOSE:
-            #     choose_category()
+            elif cmd == CAT_UP:
+                cat_ind += 1
+                articles = get_articles(CATEGORIES[cat_ind])
 
-            # # get the article
-            # elif cmd == DOWNLOAD:
-            #     current_article.download()
-            # elif cmd == ONLINE:
-            #     current_article.open_online()
+                titlebar.title = f'Articles List (cat:{CATEGORIES[cat_ind]})'
+                interface.draw_listview(content_window, articles)
+
+            elif cmd == CAT_DOWN:
+                cat_ind -= 1
+                articles = get_articles(CATEGORIES[cat_ind])
+
+                titlebar.title = f'Articles List (cat:{CATEGORIES[cat_ind]})'
+                interface.draw_listview(content_window, articles)
+
+            elif cmd == CAT_CHOOSE:
+                cat_ind = choose_category()
+                articles = get_articles(CATEGORIES[cat_ind])
+
+                titlebar.title = f'Articles List (cat:{CATEGORIES[cat_ind]})'
+                interface.draw_listview(content_window, articles)
+
+            # get the article
+            elif cmd == DOWNLOAD:
+                current_article.download()
+            elif cmd == ONLINE:
+                current_article.open_online()
 
         # check if quitting
         elif cmd in EXIT_CMDS:
