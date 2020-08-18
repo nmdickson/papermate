@@ -2,7 +2,7 @@ import datetime
 import curses as cs
 import logging
 
-import interface
+from .interface import draw_listview, draw_detailedview
 
 import feedparser as fp
 
@@ -206,6 +206,7 @@ class CommandBar:
 
 
 def controller(screen):
+    '''designed to be used by a curses wrapper `curses.wrapper(controller)`'''
 
     logging.info('starting log')
 
@@ -241,7 +242,7 @@ def controller(screen):
     cmdbar.commands = {'z/x': 'Next/Prev Category', 'c': 'Choose Category'}
     cmdbar.status = 'Select an article...'
 
-    interface.draw_listview(content_window, articles)
+    draw_listview(content_window, articles)
 
     # ----------------------------------------------------------------------
     # Mainloop
@@ -267,7 +268,7 @@ def controller(screen):
                                    'q': 'return'}
                 cmdbar.status = ''
 
-                interface.draw_detailedview(content_window, current_article)
+                draw_detailedview(content_window, current_article)
 
             # exit detailed (SWITCH TO LIST VIEW)
             elif cmd in BACK:
@@ -280,7 +281,7 @@ def controller(screen):
                                    'c': 'Choose Category'}
                 cmdbar.status = 'Select an article...'
 
-                interface.draw_listview(content_window, articles)
+                draw_listview(content_window, articles)
 
             # # category changes
             elif cmd == CAT_UP:
@@ -288,21 +289,21 @@ def controller(screen):
                 articles = get_articles(CATEGORIES[cat_ind])
 
                 titlebar.title = f'Articles List (cat:{CATEGORIES[cat_ind]})'
-                interface.draw_listview(content_window, articles)
+                draw_listview(content_window, articles)
 
             elif cmd == CAT_DOWN:
                 cat_ind -= 1
                 articles = get_articles(CATEGORIES[cat_ind])
 
                 titlebar.title = f'Articles List (cat:{CATEGORIES[cat_ind]})'
-                interface.draw_listview(content_window, articles)
+                draw_listview(content_window, articles)
 
             elif cmd == CAT_CHOOSE:
                 cat_ind = choose_category()
                 articles = get_articles(CATEGORIES[cat_ind])
 
                 titlebar.title = f'Articles List (cat:{CATEGORIES[cat_ind]})'
-                interface.draw_listview(content_window, articles)
+                draw_listview(content_window, articles)
 
             # get the article
             elif cmd == DOWNLOAD:
@@ -325,7 +326,3 @@ def controller(screen):
         # some other inconsequential cmd
         else:
             continue
-
-
-if __name__ == '__main__':
-    cs.wrapper(controller)
