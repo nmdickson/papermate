@@ -20,6 +20,7 @@ CAT_UP, CAT_DOWN, CAT_CHOOSE = ord('z'), ord('x'), ord('c')
 ART_CHOOSE = tuple(ord(str(i)) for i in range(NUM_ARTICLES))
 
 DOWNLOAD, ONLINE = ord('d'), ord('o')
+DEFAULT_DEST = '/home/dev/Downloads'
 BACK = (ord('q'), cs.KEY_BACKSPACE)
 
 
@@ -76,8 +77,13 @@ class Article:
         # title
         self.title = entry.title.replace('\n ', '')
 
-    def download(self):
-        pass
+    def download(self, dest=DEFAULT_DEST):
+        import urllib.request
+
+        pdf_data = urllib.request.urlopen(self.pdf_url)
+
+        with open(f'{dest}/{self.id}.pdf', 'wb') as dest_file:
+            dest_file.write(pdf_data.read())
 
     def open_online(self):
         import webbrowser as wb
@@ -300,7 +306,11 @@ def controller(screen):
 
             # get the article
             elif cmd == DOWNLOAD:
+
+                cmdbar.status = 'Downloading file...'
                 current_article.download()
+                cmdbar.status = ''
+
             elif cmd == ONLINE:
 
                 cmdbar.status = 'Opening in browser...'
