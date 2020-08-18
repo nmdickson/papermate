@@ -80,7 +80,9 @@ class Article:
         pass
 
     def open_online(self):
-        pass
+        import webbrowser as wb
+
+        wb.open(self.abs_url)
 
 
 def get_articles(cat=DEFAULT_CAT):
@@ -300,7 +302,10 @@ def controller(screen):
             elif cmd == DOWNLOAD:
                 current_article.download()
             elif cmd == ONLINE:
+
+                cmdbar.status = 'Opening in browser...'
                 current_article.open_online()
+                cmdbar.status = ''
 
         # check if quitting
         elif cmd in EXIT_CMDS:
