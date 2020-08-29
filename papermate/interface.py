@@ -1,5 +1,6 @@
 import curses as cs
 import logging
+import textwrap as tw
 
 
 def draw_listview(window, articles):
@@ -19,13 +20,14 @@ def draw_listview(window, articles):
         x += len(marker)
 
         # TODO et al. or all authors should be in options
+        authors = article.authors[0] + ' et al.'
+        short_abstract = tw.shorten(article.abstract, 400, placeholder='...')
 
         window.addstr(y, x, article.title, cs.A_BOLD)
-        window.addstr(y + 1, x, article.authors[0] + ' et al.', cs.A_DIM)
+        window.addstr(y + 1, x, authors, cs.A_DIM)
 
-        # TODO use textwrapper module as well, to avoid splitting words
         abs_win = window.derwin(6, width - 30, y + 2, x)
-        abs_win.addstr(0, 0, article.abstract[:400] + '...')
+        abs_win.addstr(0, 0, short_abstract)
 
     window.refresh()
 
