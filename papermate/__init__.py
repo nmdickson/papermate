@@ -151,8 +151,12 @@ class CommandBar:
         height, width = window.getmaxyx()
         self.centre = width // 4
 
-        self._command_win = window.derwin(1, width // 2 - 1, 0, 0)
-        self._status_win = window.derwin(1, width // 2, 0, width // 2)
+        self._command_size = width // 2 - 1
+        self._command_win = window.derwin(1, self._command_size, 0, 0)
+
+        self._status_size = width // 2
+        self._status_win = window.derwin(1, self._status_size, 0, width // 2)
+
         window.bkgd('|')
 
         self.commands = {}
@@ -170,7 +174,7 @@ class CommandBar:
     @commands.setter
     def commands(self, value):
         '''dict of key and description'''
-        # TODO check length
+
         self._commands = value
         self.draw_commands()
 
@@ -178,9 +182,13 @@ class CommandBar:
 
         self._command_win.clear()
 
-        # TODO centre commands
-        # x0 = self.centre - len(self.commands) // 2
-        x = 2
+        text = '  '.join(f'{key} {desc}' for key, desc in self.commands.items())
+
+        if len(text) >= self._command_size:
+            mssg = f"commands too long for bar (max of {len(text)})"
+            raise ValueError(mssg)
+
+        x = self.centre - len(text) // 2
         for key, desc in self.commands.items():
             self._command_win.addstr(0, x, key, cs.A_STANDOUT)
             x += len(key) + 1
@@ -242,7 +250,7 @@ def controller(screen):
     # Gather initial article list, draw initial list view
     # ----------------------------------------------------------------------
 
-    cmdbar.status = 'Loading articles'
+    cmdbar.status = 'Loading articles...'
 
     articles = get_articles()
     cat_ind = 3
@@ -252,7 +260,7 @@ def controller(screen):
     view = 'list'
 
     cmdbar.commands = {'z/x': 'Next/Prev Category', 'c': 'Choose Category'}
-    cmdbar.status = 'Select an article...'
+    cmdbar.status = 'Select an article for details'
 
     draw_listview(content_window, articles)
 
