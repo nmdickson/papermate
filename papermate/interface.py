@@ -36,17 +36,47 @@ def draw_detailedview(window, article):
     '''draw the detailed "more" page for a chosen article'''
     window.clear()
 
-    height, width = window.getmaxyx()
+    x, y = 10, 2
+    max_height, max_width = window.getmaxyx()
+    width = max_width - 2 * x
 
-    x, y = 5, 2
+    # ----------------------------------------------------------------------
+    # Title
+    # ----------------------------------------------------------------------
 
-    title_win = window.derwin(2, width - 30, y, x)
-    title_win.addstr(0, 0, article.title, cs.A_BOLD)
+    title = tw.wrap(article.title, width)
 
-    auth_win = window.derwin(4, width - 30, y + 3, x + 5)
-    auth_win.addstr(0, 0, ', '.join(article.authors), cs.A_DIM)
+    title_win = window.derwin(len(title), width, y, x)
 
-    abs_win = window.derwin(height - 10, width - 30, y + 7, x + 5)
-    abs_win.addstr(0, 0, article.abstract)
+    for ind, line in enumerate(title):
+        title_win.addstr(ind, 0, line, cs.A_BOLD)
+
+    # ----------------------------------------------------------------------
+    # Authors
+    # ----------------------------------------------------------------------
+
+    y += len(title) + 1
+    x += 5
+    width -= 5
+
+    authors = tw.wrap(', '.join(article.authors), width)
+
+    auth_win = window.derwin(len(authors), width, y, x)
+
+    for ind, line in enumerate(authors):
+        auth_win.addstr(ind, 0, line, cs.A_DIM)
+
+    # ----------------------------------------------------------------------
+    # Abstract
+    # ----------------------------------------------------------------------
+
+    y += len(authors) + 1
+
+    abstract = tw.wrap(article.abstract, width)
+
+    abs_win = window.derwin(len(abstract), width, y, x)
+
+    for ind, line in enumerate(abstract):
+        abs_win.addstr(ind, 0, line)
 
     window.refresh()
