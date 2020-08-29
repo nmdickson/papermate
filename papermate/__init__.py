@@ -38,6 +38,7 @@ EXIT_CMDS = {
 
 
 class Article:
+    # TODO convert latex math codes to unicode
 
     def __init__(self, entry):
         '''`entry` is single "entries" dict from feedparser response'''
@@ -160,6 +161,8 @@ class CommandBar:
         self.draw_commands()
         self.draw_status()
 
+        window.refresh()
+
     @property
     def commands(self):
         return self._commands
@@ -221,15 +224,25 @@ def controller(screen):
 
     title_window = screen.subwin(1, width, 0, 0)
     titlebar = TitleBar(title_window)
+    titlebar.title = f'Articles List (cat:{DEFAULT_CAT})'
 
     cmd_window = screen.subwin(1, width - 1, height - 1, 0)
     cmdbar = CommandBar(cmd_window)
 
-    content_window = screen.subwin(height - 2, width, 1, 0)
+    border_window = screen.subwin(height - 2, width, 1, 0)
+    border_window.border()
+    content_window = border_window.derwin(height - 4, width - 2, 1, 1)
+
+    logging.info(f'border size: {border_window.getmaxyx()}')
+    logging.info(f'content size: {content_window.getmaxyx()}')
+
+    screen.refresh()
 
     # ----------------------------------------------------------------------
     # Gather initial article list, draw initial list view
     # ----------------------------------------------------------------------
+
+    cmdbar.status = 'Loading articles'
 
     articles = get_articles()
     cat_ind = 3
@@ -238,7 +251,6 @@ def controller(screen):
 
     view = 'list'
 
-    titlebar.title = f'Articles List (cat:{DEFAULT_CAT})'
     cmdbar.commands = {'z/x': 'Next/Prev Category', 'c': 'Choose Category'}
     cmdbar.status = 'Select an article...'
 

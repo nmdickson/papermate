@@ -1,16 +1,15 @@
 import curses as cs
+import logging
 
 
 def draw_listview(window, articles):
     window.clear()
 
-    window.border()
-
     height, width = window.getmaxyx()
 
     for ind, article in enumerate(articles):
 
-        # TODO the 5 depends on text wrapping, figure it out
+        # TODO the y depends on text wrapping, figure it out
         x, y = 10, 2 + ind * 10
 
         marker = f'[{ind}] '
@@ -24,8 +23,8 @@ def draw_listview(window, articles):
         window.addstr(y, x, article.title, cs.A_BOLD)
         window.addstr(y + 1, x, article.authors[0] + ' et al.', cs.A_DIM)
 
-        # TODO use textwrapper as well, to avoid splitting words
-        abs_win = window.derwin(6, width - 30, y + 3, x)
+        # TODO use textwrapper module as well, to avoid splitting words
+        abs_win = window.derwin(6, width - 30, y + 2, x)
         abs_win.addstr(0, 0, article.abstract[:400] + '...')
 
     window.refresh()
@@ -34,8 +33,6 @@ def draw_listview(window, articles):
 def draw_detailedview(window, article):
     '''draw the detailed "more" page for a chosen article'''
     window.clear()
-
-    window.border()
 
     height, width = window.getmaxyx()
 
