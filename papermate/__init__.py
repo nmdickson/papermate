@@ -1,8 +1,7 @@
-import datetime
 import curses as cs
 import logging
 
-from .interface import draw_listview, draw_detailedview
+from .interface import draw_listview, draw_detailedview, TitleBar, CommandBar
 
 import feedparser as fp
 
@@ -105,115 +104,6 @@ def get_articles(cat=DEFAULT_CAT):
 
     # TODO check for errors here
     return [Article(entry) for entry in fp.parse(url).entries]
-
-
-class TitleBar:
-
-    @property
-    def title(self):
-        return self._title
-
-    @title.setter
-    def title(self, value):
-        self._title = value
-        self.draw_titlebar()
-
-    def __init__(self, window):
-
-        self.window = window
-
-        _, self.width = window.getmaxyx()
-
-        self.version = 'papermate (0.1)'
-
-        self.title = ''
-
-    def draw_titlebar(self):
-
-        self.window.clear()
-
-        # program title and version  TODO grab version from setup.py
-        self.window.addstr(0, 1, self.version)
-
-        # title of article in detailedview, category in listview
-        self.window.addstr(0, (self.width - len(self.title)) // 2, self.title)
-
-        # current date
-        now = datetime.datetime.now().strftime('%d-%m-%Y ')
-        self.window.addstr(0, self.width - len(now) - 1, now)
-
-        self.window.refresh()
-
-
-class CommandBar:
-
-    def __init__(self, window):
-        height, width = window.getmaxyx()
-        self.centre = width // 4
-
-        self._command_size = width // 2 - 1
-        self._command_win = window.derwin(1, self._command_size, 0, 0)
-
-        self._status_size = width // 2
-        self._status_win = window.derwin(1, self._status_size, 0, width // 2)
-
-        window.bkgd('|')
-
-        self.commands = {}
-        self.status = ''
-
-        self.draw_commands()
-        self.draw_status()
-
-        window.refresh()
-
-    @property
-    def commands(self):
-        return self._commands
-
-    @commands.setter
-    def commands(self, value):
-        '''dict of key and description'''
-
-        self._commands = value
-        self.draw_commands()
-
-    def draw_commands(self):
-
-        self._command_win.clear()
-
-        text = '  '.join(f'{key} {desc}' for key, desc in self.commands.items())
-
-        if len(text) >= self._command_size:
-            mssg = f"commands too long for bar (max of {len(text)})"
-            raise ValueError(mssg)
-
-        x = self.centre - len(text) // 2
-        for key, desc in self.commands.items():
-            self._command_win.addstr(0, x, key, cs.A_STANDOUT)
-            x += len(key) + 1
-            self._command_win.addstr(0, x, desc)
-            x += len(desc) + 2
-
-        self._command_win.refresh()
-
-    @property
-    def status(self):
-        return self._status
-
-    @status.setter
-    def status(self, value):
-        self._status = value
-        self.draw_status()
-
-    def draw_status(self):
-
-        self._status_win.clear()
-
-        x = self.centre - len(self.status) // 2
-
-        self._status_win.addstr(0, x, self.status)
-        self._status_win.refresh()
 
 
 def controller(screen):
