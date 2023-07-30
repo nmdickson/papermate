@@ -1,0 +1,287 @@
+import logging
+import datetime
+import curses as cs
+
+from .interface import TitleBar, CommandBar, draw_listview, draw_detailedview
+from ..queries import QuerySet
+
+
+__all__ = ["controller"]
+
+
+DATE_UP, DATE_DOWN = ord('x'), ord('z')
+CURS_UP, CURS_DOWN = cs.KEY_UP, cs.KEY_DOWN
+
+SELECT = (ord('\n'), ord('\r'), cs.KEY_ENTER)
+DOWNLOAD, ONLINE = ord('d'), ord('o')
+
+BACK = (ord('b'), cs.KEY_BACKSPACE)
+
+
+COMMANDS = {
+    'list': {
+        DATE_UP, DATE_DOWN, CURS_UP, CURS_DOWN, *SELECT
+    },
+    'detailed': {
+        DOWNLOAD, ONLINE, *BACK
+    }
+}
+EXIT_CMDS = {
+    ord('q'), 'ctrl-c', 27  # Escape key = 27, but there is a huge delay
+}
+
+
+def get_config_file():
+    import os
+    import pathlib
+
+    datadir = f"{pathlib.Path.home()}/.config"
+
+    fn = f"{datadir}/papermate.ini"
+
+    try:
+        # If file does not exist, create it (x mode fails if exists)
+        file = open(fn, 'x')
+        os.chmod(fn, 0o640)
+
+    except FileExistsError:
+        file = open(fn)
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Could not find/open file at {fn}")
+
+    finally:
+        file.close()
+
+    return fn
+
+
+def initialize_screen(screen):
+
+    # get info about total screen size, for sizing of windows
+    height, width = screen.getmaxyx()
+
+    title_window = screen.subwin(1, width, 0, 0)
+    titlebar = TitleBar(title_window)
+
+    cmd_window = screen.subwin(1, width - 1, height - 1, 0)
+    cmdbar = CommandBar(cmd_window)
+
+    border_window = screen.subwin(height - 2, width, 1, 0)
+    border_window.border()
+    content_window = border_window.derwin(height - 4, width - 2, 1, 1)
+
+    logging.info(f'border size: {border_window.getmaxyx()}')
+    logging.info(f'content size: {content_window.getmaxyx()}')
+
+    screen.refresh()
+
+    return titlebar, content_window, cmdbar
+
+
+def controller(screen):
+    '''designed to be used by a curses wrapper `curses.wrapper(controller)`'''
+
+    logging.info('starting log')
+
+    date = datetime.datetime.today()
+
+    # ----------------------------------------------------------------------
+    # Screen initialization
+    # ----------------------------------------------------------------------
+
+    cs.curs_set(0)
+
+    # get info about total screen size, for sizing of windows
+    height, width = screen.getmaxyx()
+
+    titlebar, content_window, cmdbar = initialize_screen(screen)
+
+    curs_ind = 0
+
+    logging.info('Screen initialized')
+
+    # ----------------------------------------------------------------------
+    # Gather initial article list, draw initial list view
+    # ----------------------------------------------------------------------
+
+    logging.info('Loading articles')
+
+    cmdbar.status = 'Loading articles...'
+
+    config_file = get_config_file()
+    queries = QuerySet.from_configfile(config_file)
+
+    if len(queries) == 0:
+        mssg = f"No queries found in config file {config_file}. Please add some"
+        print(mssg)
+        return
+
+    search_results = queries.execute(date)
+
+    logging.info('Articles loaded')
+
+    current_article = None
+
+    view = 'list'
+
+    titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
+
+    cmdbar.commands = {'z/x': 'Prev/Next Day', '\u21B3': 'Select Article'}
+    cmdbar.status = 'Select an article for more details'
+
+    draw_listview(content_window, search_results, 0)
+
+    logging.info('Initial view drawn')
+
+    # ----------------------------------------------------------------------
+    # Mainloop
+    # ----------------------------------------------------------------------
+
+    while True:
+
+        cmd = screen.getch()
+
+        logging.info(f'received command : {cmd} ({chr(cmd)})')
+
+        # check that cmd is right for this view
+        if cmd in COMMANDS[view]:
+
+            logging.info('Command is valid')
+
+            # commands
+
+            # --------------------------------------------------------------
+            # article select (SWITCH TO DETAILED VIEW)
+            # --------------------------------------------------------------
+
+            if cmd in SELECT:
+
+                logging.info('Selecting article')
+
+                view = 'detailed'
+
+                current_article = search_results.articles[curs_ind]
+
+                titlebar.title = f'Article Details'
+
+                cmdbar.commands = {'d': 'Download', 'o': 'View online',
+                                   'b': 'return'}
+                cmdbar.status = ''
+
+                draw_detailedview(content_window, current_article)
+
+            # --------------------------------------------------------------
+            # exit detailed (SWITCH TO LIST VIEW)
+            # --------------------------------------------------------------
+
+            elif cmd in BACK:
+
+                logging.info('Going back')
+
+                view = 'list'
+
+                current_article = None
+
+                titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
+
+                cmdbar.commands = {'z/x': 'Next/Prev Category',
+                                   'c': 'Choose Category'}
+                cmdbar.status = 'Select an article for more details'
+
+                draw_listview(content_window, search_results, curs_ind)
+
+            # --------------------------------------------------------------
+            # Change dates
+            # --------------------------------------------------------------
+
+            elif cmd == DATE_UP:
+
+                logging.info('Moving date up')
+
+                curs_ind = 0
+                date += datetime.timedelta(days=1)
+                # TODO check date not in future
+
+                search_results = queries.execute(date)
+
+                titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
+
+                draw_listview(content_window, search_results, curs_ind)
+
+            elif cmd == DATE_DOWN:
+
+                logging.info('Moving date down')
+
+                curs_ind = 0
+                date -= datetime.timedelta(days=1)
+
+                search_results = queries.execute(date)
+
+                titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
+
+                draw_listview(content_window, search_results, curs_ind)
+
+            # --------------------------------------------------------------
+            # Scroll through articles
+            # --------------------------------------------------------------
+
+            # TODO not good to redraw entire thing each time tbh
+
+            elif cmd == CURS_UP:
+
+                logging.info('Moving cursor up')
+
+                curs_ind -= 1
+
+                if curs_ind < 0:
+                    curs_ind = 0
+
+                logging.info(f'New cursor index: {curs_ind}')
+
+                draw_listview(content_window, search_results, curs_ind)
+
+            elif cmd == CURS_DOWN:
+
+                logging.info('Moving cursor down')
+
+                curs_ind += 1
+
+                if curs_ind >= len(search_results.articles):
+                    curs_ind = len(search_results.articles) - 1
+
+                logging.info(f'New cursor index: {curs_ind}')
+
+                draw_listview(content_window, search_results, curs_ind)
+
+            # --------------------------------------------------------------
+            # Commands for interacting with articles in detailed view
+            # --------------------------------------------------------------
+
+            elif cmd == DOWNLOAD:
+
+                logging.info('Downloading file')
+
+                cmdbar.status = 'Downloading file...'
+                current_article.download()
+                cmdbar.status = ''
+
+            elif cmd == ONLINE:
+
+                logging.info('Opening in browser')
+
+                cmdbar.status = 'Opening in browser...'
+                current_article.open_online()
+                cmdbar.status = ''
+
+        # ------------------------------------------------------------------
+        # Quit program
+        # ------------------------------------------------------------------
+
+        elif cmd in EXIT_CMDS:
+            # do quitty stuff
+            raise SystemExit
+
+        # some other inconsequential cmd
+        else:
+            continue

@@ -35,7 +35,7 @@ class TitleBar:
         self.window.addstr(0, (self.width - len(self.title)) // 2, self.title)
 
         # current date
-        now = datetime.datetime.now().strftime('%d-%m-%Y ')
+        now = datetime.datetime.today().strftime('%Y-%m-%d ')
         self.window.addstr(0, self.width - len(now) - 1, now)
 
         self.window.refresh()
@@ -112,67 +112,95 @@ class CommandBar:
         self._status_win.refresh()
 
 
-def draw_listview(window, articles):
-    # TODO et al. or all authors should be in options
+def draw_listview(window, query_res, curs_ind):
     window.clear()
 
     y = 0
     max_height, max_width = window.getmaxyx()
 
-    for ind, article in enumerate(articles):
+    # 10 character buffer on either side
+    width = max_width - 20
 
-        width = max_width - 25
-        x = 10
+    art_ind = 0
+
+    for query, results in query_res.items():
+
+        x = 5
         y += 2
 
-        # ----------------------------------------------------------------------
-        # Numeric label
-        # ----------------------------------------------------------------------
+        window.addstr(y, x, str(query))
 
-        marker = f'[{ind}] '
-        window.addstr(y, x, marker)
-        x += len(marker)
-        width -= len(marker)
+        x = 10
 
-        # ----------------------------------------------------------------------
-        # Title
-        # ----------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # If no articles found, note that
+        # ------------------------------------------------------------------
 
-        title = tw.wrap(article.title, width)
+        if results.empty:
 
-        title_win = window.derwin(len(title), width, y, x)
+            y += 2
 
-        for ind, line in enumerate(title):
-            title_win.addstr(ind, 0, line, cs.A_BOLD)
+            window.addstr(y, x, 'No articles found')
 
-        y += len(title)
+            continue
 
-        # ----------------------------------------------------------------------
-        # Author
-        # ----------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # List articles
+        # ------------------------------------------------------------------
 
-        authors = tw.wrap(article.authors[0] + ' et al.', width)
+        for article in results:
 
-        auth_win = window.derwin(len(authors), width, y, x)
+            y += 2
 
-        for ind, line in enumerate(authors):
-            auth_win.addstr(ind, 0, line, cs.A_DIM)
+            # ----------------------------------------------------------------------
+            # Numeric label
+            # ----------------------------------------------------------------------
 
-        y += len(authors)
+            marker = f'=> ' if curs_ind == art_ind else ''
+            window.addstr(y, x - len(marker), marker)
+            # width -= len(marker)
 
-        # ----------------------------------------------------------------------
-        # Abstract
-        # ----------------------------------------------------------------------
+            # ----------------------------------------------------------------------
+            # Title
+            # ----------------------------------------------------------------------
 
-        short_abstract = tw.shorten(article.abstract, 400, placeholder='...')
-        short_abstract = tw.wrap(short_abstract, width)
+            bibcode = article.bibcode
 
-        abs_win = window.derwin(len(short_abstract), width, y, x)
+            title = tw.wrap(article.title, width - len(bibcode) - 5)
 
-        for ind, line in enumerate(short_abstract):
-            abs_win.addstr(ind, 0, line)
+            title_win = window.derwin(len(title), width, y, x)
 
-        y += len(short_abstract)
+            for ind, line in enumerate(title):
+                title_win.addstr(ind, 0, line, cs.A_BOLD)
+
+            title_win.addstr(0, width - len(bibcode) - 1, bibcode,
+                             cs.A_UNDERLINE)
+
+            y += len(title)
+
+            # ----------------------------------------------------------------------
+            # Author
+            # ----------------------------------------------------------------------
+
+            window.addstr(y, x, article.short_authors(width), cs.A_DIM)
+
+            y += 1
+
+            # ----------------------------------------------------------------------
+            # Abstract
+            # ----------------------------------------------------------------------
+
+            short_abs = tw.shorten(article.abstract, 300, placeholder='...')
+            short_abs = tw.wrap(short_abs, width)
+
+            abs_win = window.derwin(len(short_abs), width, y, x)
+
+            for ind, line in enumerate(short_abs):
+                abs_win.addstr(ind, 0, line)
+
+            y += len(short_abs)
+
+            art_ind += 1
 
     window.refresh()
 

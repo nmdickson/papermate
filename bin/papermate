@@ -3,5 +3,9 @@
 import papermate
 import curses as cs
 
+import logging
+
+logging.basicConfig(filename='pmate.log', filemode='w', level=logging.DEBUG)
+
 if __name__ == '__main__':
     cs.wrapper(papermate.controller)
