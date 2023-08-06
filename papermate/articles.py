@@ -37,6 +37,15 @@ class Article:
         else:
             return authors[0]
 
+    def short_abstract(self, width, *, Nchars=300, end='...'):
+        import textwrap as tw
+
+        short_abs = tw.shorten(self.abstract, Nchars, placeholder=end)
+
+        wrap_abs = tw.wrap(short_abs, width)
+
+        return wrap_abs
+
     def download(self, dest=DEFAULT_DW_DEST):
         import urllib.request
         # TODO why did I use urlib and not requests?

@@ -21,6 +21,16 @@ class Query:
     def __str__(self):
         return f'{self.keywords} - {self.arxiv_class}'
 
+    def column_str(self, width=30):
+        import textwrap as tw
+
+        if width is None:
+            return [self.keywords, self.arxiv_class]
+
+        else:
+            return (tw.wrap(self.keywords, width)
+                    + tw.wrap(self.arxiv_class, width))
+
     def __init__(self, keywords, bibstem='arxiv', arxiv_class='astro-ph.*',
                  **search_terms):
 

@@ -2,7 +2,7 @@ import logging
 import datetime
 import curses as cs
 
-from .interface import TitleBar, CommandBar, draw_listview, draw_detailedview
+from .interface import TitleBar, CommandBar, ListView, draw_listview, draw_detailedview
 from ..queries import QuerySet
 
 
@@ -13,9 +13,9 @@ DATE_UP, DATE_DOWN = ord('x'), ord('z')
 CURS_UP, CURS_DOWN = cs.KEY_UP, cs.KEY_DOWN
 
 SELECT = (ord('\n'), ord('\r'), cs.KEY_ENTER)
-DOWNLOAD, ONLINE = ord('d'), ord('o')
 
 BACK = (ord('b'), cs.KEY_BACKSPACE)
+DOWNLOAD, ONLINE = ord('d'), ord('o')
 
 
 COMMANDS = {
@@ -26,6 +26,7 @@ COMMANDS = {
         DOWNLOAD, ONLINE, *BACK
     }
 }
+
 EXIT_CMDS = {
     ord('q'), 'ctrl-c', 27  # Escape key = 27, but there is a huge delay
 }
@@ -85,6 +86,7 @@ def controller(screen):
     logging.info('starting log')
 
     date = datetime.datetime.today()
+    date = datetime.datetime.today() - datetime.timedelta(days=1)
 
     # ----------------------------------------------------------------------
     # Screen initialization
@@ -123,16 +125,27 @@ def controller(screen):
 
     current_article = None
 
-    view = 'list'
+    # view = 'list'
 
     titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
 
     cmdbar.commands = {'z/x': 'Prev/Next Day', '\u21B3': 'Select Article'}
     cmdbar.status = 'Select an article for more details'
 
-    draw_listview(content_window, search_results, 0)
+    # draw_listview(content_window, search_results, 0)
 
     logging.info('Initial view drawn')
+
+    view = ListView(content_window, search_results)
+
+    logging.info(f'Heres the class:  {view}')
+    logging.info(f'  {view.max_height=}, {view.max_width=}')
+    logging.info(f'  {view.height=}, {view.width=}')
+    logging.info(f'  {view._pages=}')
+
+    logging.info('trying to draw it')
+
+    # lw.draw()
 
     # ----------------------------------------------------------------------
     # Mainloop
@@ -145,7 +158,7 @@ def controller(screen):
         logging.info(f'received command : {cmd} ({chr(cmd)})')
 
         # check that cmd is right for this view
-        if cmd in COMMANDS[view]:
+        if cmd in COMMANDS[view.type]:
 
             logging.info('Command is valid')
 
@@ -185,11 +198,14 @@ def controller(screen):
 
                 titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
 
-                cmdbar.commands = {'z/x': 'Next/Prev Category',
-                                   'c': 'Choose Category'}
+                cmdbar.commands = {'z/x': 'Prev/Next Day',
+                                   '\u21B3': 'Select Article'}
+
                 cmdbar.status = 'Select an article for more details'
 
-                draw_listview(content_window, search_results, curs_ind)
+                # draw_listview(content_window, search_results, curs_ind)
+                view = ListView(content_window, search_results)
+                # view.curs_ind =  TODO reset curs_ind to last value
 
             # --------------------------------------------------------------
             # Change dates
@@ -199,7 +215,7 @@ def controller(screen):
 
                 logging.info('Moving date up')
 
-                curs_ind = 0
+                # curs_ind = 0
                 date += datetime.timedelta(days=1)
                 # TODO check date not in future
 
@@ -207,20 +223,22 @@ def controller(screen):
 
                 titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
 
-                draw_listview(content_window, search_results, curs_ind)
+                # draw_listview(content_window, search_results, curs_ind)
+                view = ListView(content_window, search_results)
 
             elif cmd == DATE_DOWN:
 
                 logging.info('Moving date down')
 
-                curs_ind = 0
+                # curs_ind = 0
                 date -= datetime.timedelta(days=1)
 
                 search_results = queries.execute(date)
 
                 titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
 
-                draw_listview(content_window, search_results, curs_ind)
+                # draw_listview(content_window, search_results, curs_ind)
+                view = ListView(content_window, search_results)
 
             # --------------------------------------------------------------
             # Scroll through articles
@@ -232,27 +250,31 @@ def controller(screen):
 
                 logging.info('Moving cursor up')
 
-                curs_ind -= 1
+                # curs_ind -= 1
 
-                if curs_ind < 0:
-                    curs_ind = 0
+                # if curs_ind < 0:
+                #     curs_ind = 0
 
-                logging.info(f'New cursor index: {curs_ind}')
+                # logging.info(f'New cursor index: {curs_ind}')
 
-                draw_listview(content_window, search_results, curs_ind)
+                # draw_listview(content_window, search_results, curs_ind)
+
+                view.move_cursor('up')
 
             elif cmd == CURS_DOWN:
 
                 logging.info('Moving cursor down')
 
-                curs_ind += 1
+                # curs_ind += 1
 
-                if curs_ind >= len(search_results.articles):
-                    curs_ind = len(search_results.articles) - 1
+                # if curs_ind >= len(search_results.articles):
+                #     curs_ind = len(search_results.articles) - 1
 
-                logging.info(f'New cursor index: {curs_ind}')
+                # logging.info(f'New cursor index: {curs_ind}')
 
-                draw_listview(content_window, search_results, curs_ind)
+                # draw_listview(content_window, search_results, curs_ind)
+
+                view.move_cursor('down')
 
             # --------------------------------------------------------------
             # Commands for interacting with articles in detailed view

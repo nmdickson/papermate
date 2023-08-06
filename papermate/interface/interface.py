@@ -2,6 +2,8 @@ import curses as cs
 import textwrap as tw
 import datetime
 
+import logging
+
 
 class TitleBar:
 
@@ -112,25 +114,328 @@ class CommandBar:
         self._status_win.refresh()
 
 
+class ListView:
+
+    type = 'list'
+
+    def __init__(self, window, query_res):
+
+        self.window = window
+
+        self.window.clear()
+
+        self.max_height, self.max_width = self.window.getmaxyx()
+
+        self.query_col_width = int(0.1 * self.max_width)
+        self.width = self.max_width - (2 * (self.query_col_width + 4))
+
+        # self.height, self.width = self.max_height - 2, self.max_width - 20
+        # self.height = self.max_height - 2
+        self.height = self.max_height
+
+        self.curs_ind = 0
+        self.page = 0
+
+        self._query_res = query_res
+
+        # for each query, get all the actual text and stuff involved
+        # and figure out how many lines total are in it, so we can decide what
+        # to show on each page
+        self._pages = []
+        content = {}
+        Nline = 2
+        for query, results in query_res.items():
+
+            logging.info(f'creating view for {query=}')
+
+            content[query] = []
+
+            if results.empty:
+                Nline += 2
+                content[query] = None
+
+            for article in results:
+
+                logging.info(f'--creating view for {article=}')
+
+                para = {}
+
+                title_width = self.width - len(article.bibcode) - 5
+                para['title'] = tw.wrap(article.title, title_width)
+
+                para['abstract'] = article.short_abstract(self.width)
+
+                para['Nlines'] = sum(map(len, para.values())) + 1
+
+                para['authors'] = article.short_authors(self.width)
+                para['bibcode'] = article.bibcode
+
+                Nline += para['Nlines'] + 2
+
+                logging.info(f'---- lines: {para["Nlines"]} '
+                             f'({Nline} / {self.height} total)')
+
+                # logging.info(f'{content=}')
+                # logging.info(content[query])
+
+                if Nline < self.height:
+                    logging.info('---- adding this para to content')
+                    content[query].append(para)
+
+                else:
+                    # move to a new page
+                    logging.info('---- starting new page')
+
+                    if not content[query]:
+                        del content[query]
+
+                    self._pages.append(content)
+
+                    content = {query: [para]}
+                    Nline = 2 + para['Nlines'] + 2
+
+        self._pages.append(content)
+
+        self.Npages = len(self._pages)
+
+        self.draw()
+
+    def draw(self):
+        '''draw this page'''
+
+        self.window.clear()
+
+        logging.info(f'drawing page {self.page}')
+
+        content = self._pages[self.page]
+
+        logging.info(f'--drawing {content}')
+
+        y = 2
+        # max_height, max_width = self.window.getmaxyx()
+
+        # query_col_width = 30
+        # self.query_col_width = int(0.1 * max_width)
+
+        # 10 character buffer on either side
+        # width = max_width - 20
+        # width = max_width - (2 * (query_col_width + 4))
+
+        art_ind = 0
+
+        page_label = f'pg. {self.page + 1}/{self.Npages}'
+        self.window.addstr(y, self.max_width - len(page_label) - 2,
+                           page_label, cs.A_ITALIC)
+
+        for query, articles in content.items():
+
+            logging.info(f'---- drawing {query=}')
+
+            x = 4
+            # y += 2
+
+            logging.info('---- drawing query name in column')
+
+            # window.addstr(y, x, str(query))
+            for dy, line in enumerate(query.column_str(self.query_col_width)):
+                xi = self.query_col_width - len(line)
+                self.window.addstr(y + dy, xi, line, cs.A_ITALIC)
+
+            x = self.query_col_width + (2 * 4)
+
+            # ------------------------------------------------------------------
+            # If no articles found, note that
+            # ------------------------------------------------------------------
+
+            if articles is None:
+
+                # y += 2
+
+                self.window.addstr(y, x, 'No articles found')
+
+                y += 2
+
+                continue
+
+            # ------------------------------------------------------------------
+            # List articles
+            # ------------------------------------------------------------------
+
+            for para in articles:
+
+                logging.info(f'------ drawing article {para}')
+
+                # y += 2
+
+                # ----------------------------------------------------------------------
+                # Numeric label
+                # ----------------------------------------------------------------------
+
+                marker = f'=> ' if self.curs_ind == art_ind else ''
+                self.window.addstr(y, x - len(marker), marker)
+                # width -= len(marker)
+
+                # ----------------------------------------------------------------------
+                # Title
+                # ----------------------------------------------------------------------
+
+                logging.info(f'------ drawing article title')
+
+                # bibcode = para['bibcode']
+
+                # title = tw.wrap(para['title'], width - len(bibcode) - 5)
+
+                logging.info(f'-------- height={len(para["title"])}, '
+                             f'width={self.width}, {y=}, {x=}')
+
+                title_win = self.window.derwin(len(para['title']),
+                                               self.width + 1, y, x)
+
+                for ind, line in enumerate(para['title']):
+
+                    logging.info(f'-------- y={ind}, x={0}, '
+                                 f'{len(line)=}, {line=}')
+
+                    title_win.addstr(ind, 0, line, cs.A_BOLD)
+
+                title_win.addstr(0, self.width - len(para['bibcode']),
+                                 para['bibcode'], cs.A_UNDERLINE)
+
+                y += len(para['title'])
+
+                # ----------------------------------------------------------------------
+                # Author
+                # ----------------------------------------------------------------------
+
+                logging.info(f'------ drawing article author')
+
+                self.window.addstr(y, x, para['authors'], cs.A_DIM)
+
+                y += 1
+
+                # ----------------------------------------------------------------------
+                # Abstract
+                # ----------------------------------------------------------------------
+
+                logging.info(f'------ drawing article abstract')
+                logging.info(f'-------- height={len(para["abstract"])}, '
+                             f'width={self.width}, {y=}, {x=}')
+
+                # short_abs = tw.shorten(article.abstract, 300, placeholder='...')
+                # short_abs = tw.wrap(short_abs, width)
+
+                abs_win = self.window.derwin(len(para['abstract']), self.width + 1,
+                                             y, x)
+
+                for ind, line in enumerate(para['abstract']):
+                    logging.info(f'-------- y={ind}, x={0}, '
+                                 f'{len(line)=}, {line=}')
+                    abs_win.addstr(ind, 0, line)
+
+                y += len(para['abstract'])
+
+                art_ind += 1
+
+                y += 2
+
+        self.window.refresh()
+
+    def scroll(self, direction, *, strict=False, redraw=True):
+        '''scroll this page up or down'''
+
+        if direction == 'up':
+
+            self.page -= 1
+
+            if self.page < 0:
+
+                self.page = 0
+
+                if strict:
+                    mssg = f'Hitting upper bound (page={self.page})'
+                    raise RuntimeError(mssg)
+
+        elif direction == 'down':
+
+            self.page += 1
+
+            if self.page >= self.Npages:
+
+                self.page = self.Npages - 1
+
+                if strict:
+                    mssg = f'Hitting lower bound (page={self.page})'
+                    raise RuntimeError(mssg)
+
+        if redraw:
+            self.draw()
+
+    def move_cursor(self, direction, *, redraw=True):
+        '''move the cursor up or down'''
+
+        # TODO really sucks to redraw the entire window each time
+
+        if direction == 'up':
+
+            self.curs_ind -= 1
+
+            if self.curs_ind < 0:
+
+                try:
+                    self.scroll('up', strict=True, redraw=False)
+                    Narticles = sum(map(len, self._pages[self.page].values()))
+
+                    self.curs_ind = Narticles - 1
+
+                except RuntimeError:
+                    self.curs_ind = 0
+
+        elif direction == 'down':
+
+            self.curs_ind += 1
+
+            # number of articles on this page
+            Narticles = sum(map(len, self._pages[self.page].values()))
+
+            if self.curs_ind >= Narticles:
+
+                try:
+                    self.scroll('down', strict=True, redraw=False)
+                    self.curs_ind = 0
+
+                except RuntimeError:
+                    self.curs_ind = Narticles - 1
+
+        if redraw:
+            self.draw()
+
+
 def draw_listview(window, query_res, curs_ind):
     window.clear()
 
-    y = 0
+    y = 2
     max_height, max_width = window.getmaxyx()
 
+    # query_col_width = 30
+    query_col_width = int(0.1 * max_width)
+
     # 10 character buffer on either side
-    width = max_width - 20
+    # width = max_width - 20
+    width = max_width - (2 * (query_col_width + 4))
 
     art_ind = 0
 
     for query, results in query_res.items():
 
-        x = 5
-        y += 2
+        x = 4
+        # y += 2
 
-        window.addstr(y, x, str(query))
+        # window.addstr(y, x, str(query))
+        for dy, line in enumerate(query.column_str(width=query_col_width)):
+            xi = query_col_width - len(line)
+            window.addstr(y + dy, xi, line, cs.A_ITALIC)
 
-        x = 10
+        x = query_col_width + (2 * 4)
 
         # ------------------------------------------------------------------
         # If no articles found, note that
@@ -138,9 +443,11 @@ def draw_listview(window, query_res, curs_ind):
 
         if results.empty:
 
-            y += 2
+            # y += 2
 
             window.addstr(y, x, 'No articles found')
+
+            y += 2
 
             continue
 
@@ -150,7 +457,7 @@ def draw_listview(window, query_res, curs_ind):
 
         for article in results:
 
-            y += 2
+            # y += 2
 
             # ----------------------------------------------------------------------
             # Numeric label
@@ -201,6 +508,8 @@ def draw_listview(window, query_res, curs_ind):
             y += len(short_abs)
 
             art_ind += 1
+
+            y += 2
 
     window.refresh()
 
