@@ -2,7 +2,7 @@ import logging
 import datetime
 import curses as cs
 
-from .interface import TitleBar, CommandBar, ListView, draw_listview, draw_detailedview
+from .interface import TitleBar, CommandBar, ListView, DetailedView
 from ..queries import QuerySet
 
 
@@ -182,7 +182,8 @@ def controller(screen):
                                    'b': 'return'}
                 cmdbar.status = ''
 
-                draw_detailedview(content_window, current_article)
+                # draw_detailedview(content_window, current_article)
+                view = DetailedView(content_window, current_article)
 
             # --------------------------------------------------------------
             # exit detailed (SWITCH TO LIST VIEW)

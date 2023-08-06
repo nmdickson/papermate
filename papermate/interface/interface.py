@@ -141,7 +141,7 @@ class ListView:
         # for each query, get all the actual text and stuff involved
         # and figure out how many lines total are in it, so we can decide what
         # to show on each page
-        self._pages = []
+        self._pages, self.Narticles = [], []
         content = {}
         Nline = 2
         for query, results in query_res.items():
@@ -189,11 +189,16 @@ class ListView:
                     if not content[query]:
                         del content[query]
 
+                    self.Narticles.append(sum([len(arts) if arts else 0
+                                               for arts in content.values()]))
+
                     self._pages.append(content)
 
                     content = {query: [para]}
                     Nline = 2 + para['Nlines'] + 2
 
+        self.Narticles.append(sum([len(arts) if arts else 0
+                                   for arts in content.values()]))
         self._pages.append(content)
 
         self.Npages = len(self._pages)
@@ -253,7 +258,7 @@ class ListView:
 
                 self.window.addstr(y, x, 'No articles found')
 
-                y += 2
+                y += 3
 
                 continue
 
@@ -383,9 +388,9 @@ class ListView:
 
                 try:
                     self.scroll('up', strict=True, redraw=False)
-                    Narticles = sum(map(len, self._pages[self.page].values()))
+                    # Narticles = sum(map(len, self._pages[self.page].values()))
 
-                    self.curs_ind = Narticles - 1
+                    self.curs_ind = self.Narticles[self.page] - 1
 
                 except RuntimeError:
                     self.curs_ind = 0
@@ -395,170 +400,81 @@ class ListView:
             self.curs_ind += 1
 
             # number of articles on this page
-            Narticles = sum(map(len, self._pages[self.page].values()))
+            # Narticles = sum(map(len, self._pages[self.page].values()))
 
-            if self.curs_ind >= Narticles:
+            if self.curs_ind >= self.Narticles[self.page]:
 
                 try:
                     self.scroll('down', strict=True, redraw=False)
                     self.curs_ind = 0
 
                 except RuntimeError:
-                    self.curs_ind = Narticles - 1
+                    self.curs_ind = self.Narticles[self.page] - 1
 
         if redraw:
             self.draw()
 
 
-def draw_listview(window, query_res, curs_ind):
-    window.clear()
+class DetailedView:
 
-    y = 2
-    max_height, max_width = window.getmaxyx()
+    type = 'detailed'
 
-    # query_col_width = 30
-    query_col_width = int(0.1 * max_width)
+    def __init__(self, window, article):
 
-    # 10 character buffer on either side
-    # width = max_width - 20
-    width = max_width - (2 * (query_col_width + 4))
+        self.window = window
+        self.article = article
 
-    art_ind = 0
+        self.window.clear()
 
-    for query, results in query_res.items():
+        self.max_height, self.max_width = self.window.getmaxyx()
 
-        x = 4
-        # y += 2
+        self.query_col_width = int(0.1 * self.max_width)
+        self.width = self.max_width - (2 * (self.query_col_width + 4))
 
-        # window.addstr(y, x, str(query))
-        for dy, line in enumerate(query.column_str(width=query_col_width)):
-            xi = query_col_width - len(line)
-            window.addstr(y + dy, xi, line, cs.A_ITALIC)
+        self.abs_width = self.width - 5
 
-        x = query_col_width + (2 * 4)
+        self.draw()
 
-        # ------------------------------------------------------------------
-        # If no articles found, note that
-        # ------------------------------------------------------------------
+    def draw(self):
 
-        if results.empty:
+        x, y = 10, 2
 
-            # y += 2
+        # ----------------------------------------------------------------------
+        # Title
+        # ----------------------------------------------------------------------
 
-            window.addstr(y, x, 'No articles found')
+        title = tw.wrap(self.article.title, self.width)
 
-            y += 2
+        title_win = self.window.derwin(len(title), self.width, y, x)
 
-            continue
+        for ind, line in enumerate(title):
+            title_win.addstr(ind, 0, line, cs.A_BOLD)
 
-        # ------------------------------------------------------------------
-        # List articles
-        # ------------------------------------------------------------------
+        # ----------------------------------------------------------------------
+        # Authors
+        # ----------------------------------------------------------------------
 
-        for article in results:
+        y += len(title) + 1
+        x += 5
 
-            # y += 2
+        authors = tw.wrap(', '.join(self.article.authors), self.abs_width)
 
-            # ----------------------------------------------------------------------
-            # Numeric label
-            # ----------------------------------------------------------------------
+        auth_win = self.window.derwin(len(authors), self.abs_width, y, x)
 
-            marker = f'=> ' if curs_ind == art_ind else ''
-            window.addstr(y, x - len(marker), marker)
-            # width -= len(marker)
+        for ind, line in enumerate(authors):
+            auth_win.addstr(ind, 0, line, cs.A_DIM)
 
-            # ----------------------------------------------------------------------
-            # Title
-            # ----------------------------------------------------------------------
+        y += len(authors) + 1
 
-            bibcode = article.bibcode
+        # ----------------------------------------------------------------------
+        # Abstract
+        # ----------------------------------------------------------------------
 
-            title = tw.wrap(article.title, width - len(bibcode) - 5)
+        abstract = tw.wrap(self.article.abstract, self.abs_width)
 
-            title_win = window.derwin(len(title), width, y, x)
+        abs_win = self.window.derwin(len(abstract), self.abs_width, y, x)
 
-            for ind, line in enumerate(title):
-                title_win.addstr(ind, 0, line, cs.A_BOLD)
+        for ind, line in enumerate(abstract):
+            abs_win.addstr(ind, 0, line)
 
-            title_win.addstr(0, width - len(bibcode) - 1, bibcode,
-                             cs.A_UNDERLINE)
-
-            y += len(title)
-
-            # ----------------------------------------------------------------------
-            # Author
-            # ----------------------------------------------------------------------
-
-            window.addstr(y, x, article.short_authors(width), cs.A_DIM)
-
-            y += 1
-
-            # ----------------------------------------------------------------------
-            # Abstract
-            # ----------------------------------------------------------------------
-
-            short_abs = tw.shorten(article.abstract, 300, placeholder='...')
-            short_abs = tw.wrap(short_abs, width)
-
-            abs_win = window.derwin(len(short_abs), width, y, x)
-
-            for ind, line in enumerate(short_abs):
-                abs_win.addstr(ind, 0, line)
-
-            y += len(short_abs)
-
-            art_ind += 1
-
-            y += 2
-
-    window.refresh()
-
-
-def draw_detailedview(window, article):
-    '''draw the detailed "more" page for a chosen article'''
-    window.clear()
-
-    x, y = 10, 2
-    max_height, max_width = window.getmaxyx()
-    width = max_width - 25
-
-    # ----------------------------------------------------------------------
-    # Title
-    # ----------------------------------------------------------------------
-
-    title = tw.wrap(article.title, width)
-
-    title_win = window.derwin(len(title), width, y, x)
-
-    for ind, line in enumerate(title):
-        title_win.addstr(ind, 0, line, cs.A_BOLD)
-
-    # ----------------------------------------------------------------------
-    # Authors
-    # ----------------------------------------------------------------------
-
-    y += len(title) + 1
-    x += 5
-    width -= 5
-
-    authors = tw.wrap(', '.join(article.authors), width)
-
-    auth_win = window.derwin(len(authors), width, y, x)
-
-    for ind, line in enumerate(authors):
-        auth_win.addstr(ind, 0, line, cs.A_DIM)
-
-    y += len(authors) + 1
-
-    # ----------------------------------------------------------------------
-    # Abstract
-    # ----------------------------------------------------------------------
-
-    abstract = tw.wrap(article.abstract, width)
-
-    abs_win = window.derwin(len(abstract), width, y, x)
-
-    for ind, line in enumerate(abstract):
-        abs_win.addstr(ind, 0, line)
-
-    window.refresh()
+        self.window.refresh()
