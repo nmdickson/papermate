@@ -15,8 +15,12 @@ class Query:
     we should have a list of them, loaded from a config file
     '''
 
-    # TODO fill this out with more when needed for more detailed view
-    _fl = ['author', 'bibcode', 'year', 'title', 'abstract', 'doi', 'page']
+    _fl = [
+        'author', 'title', 'year',
+        'doi', 'bibcode', 'bibstem', 'bibgroup'
+        'abstract', 'aff', 'keyword',
+        'page', 'read_count'
+    ]
 
     def __str__(self):
         return f'{self.keywords} - {self.arxiv_class}'
