@@ -1,4 +1,6 @@
+import logging
 import pathlib
+import textwrap as tw
 
 DEFAULT_DW_DEST = pathlib.Path('~/Downloads').expanduser()
 
@@ -14,32 +16,54 @@ class Article:
 
         # bibliographic info
         self.title = entry.title[0]
-        self.authors = entry.author
-        self.first_author = self.authors[0]
+        self._authors = entry.author
+        self.first_author = self._authors[0]
         self.year = entry.year
 
         # identifiers
         self.bibcode = entry.bibcode
-        self.doi = entry.doi
+        self._doi = entry.doi
         self.bibstem = entry.bibstem[0]
         self.bibgroup = entry.bibgroup
 
         self._identifiers = entry.identifier
 
         try:
-            self.arxiv_id = [id_ for id_ in self._identifier
+            self.arxiv_id = [id_ for id_ in self._identifiers
                              if id_.startswith('arXiv:')][0]
         except IndexError:
             self.arxiv_id = None
 
         # extra frontmatter
         self.abstract = entry.abstract
-        self.affiliations = entry.aff
+        self._affiliations = entry.aff
         self.keywords = entry.keyword
 
         # analytics
-        self.page = entry.page
-        self.read_count = self.read_count
+        self._page = entry.page
+        self.read_count = str(entry.read_count)
+        self.date = entry.pubdate
+
+    @property
+    def id(self):
+        return f'{self.first_author.split(",")[0]}{self.year}_{self.bibcode}'
+
+    @property
+    def authors(self):
+        return '; '.join(self._authors)
+
+    @property
+    def affiliations(self):
+        return '; '.join([f'({i}) {aff}' for i, aff in
+                          enumerate(self._affiliations)])
+
+    @property
+    def doi(self):
+        return '; '.join(self._doi)
+
+    @property
+    def page(self):
+        return '; '.join(self._page)
 
     @property
     def url(self):
@@ -64,7 +88,6 @@ class Article:
         '''return a string of authors to fit within the width
         if full list fits, use that, otherwise use et al.
         '''
-        import textwrap as tw
 
         auth_str = '; '.join(self.authors)
 
@@ -77,13 +100,34 @@ class Article:
             return authors[0]
 
     def short_abstract(self, width, *, Nchars=300, end='...'):
-        import textwrap as tw
 
         short_abs = tw.shorten(self.abstract, Nchars, placeholder=end)
 
         wrap_abs = tw.wrap(short_abs, width)
 
         return wrap_abs
+
+    def wrap_property(self, prop, Nchars, *, label=False):
+        '''wrap the output of a given property to Nchars'''
+
+        attr = getattr(self, prop)
+
+        if not label:
+            wrap_prop = tw.wrap(attr, Nchars)
+
+            return wrap_prop
+
+        else:
+
+            logging.info(f'wrapping with label: {prop=} {Nchars=}, {attr=}')
+
+            lbl = f'{prop} = '
+            wrap_prop = tw.wrap(attr, Nchars - len(lbl))
+
+            wrap_prop = [f'{lbl if i == 0 else (" " * len(lbl))} {p}'
+                         for i, p in enumerate(wrap_prop)]
+
+            return wrap_prop
 
     def download(self, dest=DEFAULT_DW_DEST):
         import requests

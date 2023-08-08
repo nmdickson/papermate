@@ -428,6 +428,7 @@ class DetailedView:
 
         self.max_height, self.max_width = self.window.getmaxyx()
 
+        self.height = self.max_height
         self.query_col_width = int(0.1 * self.max_width)
         self.width = self.max_width - (2 * (self.query_col_width + 4))
 
@@ -439,42 +440,97 @@ class DetailedView:
 
         x, y = 10, 2
 
-        # ----------------------------------------------------------------------
+        # ------------------------------------------------------------------
         # Title
-        # ----------------------------------------------------------------------
+        # ------------------------------------------------------------------
 
-        title = tw.wrap(self.article.title, self.width)
+        title = self.article.wrap_property('title', self.width)
 
         title_win = self.window.derwin(len(title), self.width, y, x)
 
         for ind, line in enumerate(title):
             title_win.addstr(ind, 0, line, cs.A_BOLD)
 
-        # ----------------------------------------------------------------------
+        # ------------------------------------------------------------------
         # Authors
-        # ----------------------------------------------------------------------
+        # ------------------------------------------------------------------
 
         y += len(title) + 1
         x += 5
 
-        authors = tw.wrap(', '.join(self.article.authors), self.abs_width)
+        authors = self.article.wrap_property('authors', self.abs_width)
 
-        auth_win = self.window.derwin(len(authors), self.abs_width, y, x)
+        affils = self.article.wrap_property('affiliations', self.abs_width)
+
+        auth_win = self.window.derwin(
+            len(authors) + len(affils) + 1, self.abs_width,
+            y, x
+        )
 
         for ind, line in enumerate(authors):
+            auth_win.addstr(ind, 0, line, cs.A_ITALIC)
+
+        for ind, line in enumerate(affils, len(authors)):
             auth_win.addstr(ind, 0, line, cs.A_DIM)
 
-        y += len(authors) + 1
+        auth_win.addstr(len(authors) + len(affils), 0,
+                        self.article.date, cs.A_DIM)
 
-        # ----------------------------------------------------------------------
+        y += len(authors) + len(affils) + 1 + 1
+
+        # ------------------------------------------------------------------
         # Abstract
-        # ----------------------------------------------------------------------
+        # ------------------------------------------------------------------
 
-        abstract = tw.wrap(self.article.abstract, self.abs_width)
+        abstract = self.article.wrap_property('abstract', self.abs_width)
 
         abs_win = self.window.derwin(len(abstract), self.abs_width, y, x)
 
         for ind, line in enumerate(abstract):
             abs_win.addstr(ind, 0, line)
+
+        y += len(abstract) + 1
+
+        # ------------------------------------------------------------------
+        # Infobox
+        # ------------------------------------------------------------------
+
+        info = []
+
+        # bibcode
+        info += self.article.wrap_property('bibcode', self.abs_width,
+                                           label=True)
+
+        # # doi
+        info += self.article.wrap_property('doi', self.abs_width,
+                                           label=True)
+
+        # # bibstem
+        info += self.article.wrap_property('bibstem', self.abs_width,
+                                           label=True)
+
+        # # page
+        info += self.article.wrap_property('page', self.abs_width,
+                                           label=True)
+
+        # # read_count
+        info += self.article.wrap_property('read_count', self.abs_width,
+                                           label=True)
+
+        logging.info(info)
+
+        info_width = max(map(len, info)) + 4
+        info_height = len(info) + 4
+
+        logging.info(f'{len(info)=}, {info_width=}, {y=}, {x=}')
+
+        y = self.height - info_height - 1
+        info_win = self.window.derwin(info_height, info_width, y, x)
+
+        for ind, line in enumerate(info, 2):
+            info_win.addstr(ind, 2, line)
+
+        info_win.border()
+        info_win.addstr(0, 1, 'INFO')
 
         self.window.refresh()

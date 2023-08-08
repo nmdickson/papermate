@@ -16,8 +16,8 @@ class Query:
     '''
 
     _fl = [
-        'author', 'title', 'year',
-        'doi', 'bibcode', 'bibstem', 'bibgroup'
+        'author', 'title', 'year', 'pubdate',
+        'doi', 'bibcode', 'bibstem', 'bibgroup', 'identifier',
         'abstract', 'aff', 'keyword',
         'page', 'read_count'
     ]

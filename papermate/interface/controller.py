@@ -65,7 +65,7 @@ def initialize_screen(screen):
     title_window = screen.subwin(1, width, 0, 0)
     titlebar = TitleBar(title_window)
 
-    cmd_window = screen.subwin(1, width - 1, height - 1, 0)
+    cmd_window = screen.subwin(1, width, height - 1, 0)
     cmdbar = CommandBar(cmd_window)
 
     border_window = screen.subwin(height - 2, width, 1, 0)
@@ -86,7 +86,6 @@ def controller(screen):
     logging.info('starting log')
 
     date = datetime.datetime.today()
-    date = datetime.datetime.today() - datetime.timedelta(days=1)
 
     # ----------------------------------------------------------------------
     # Screen initialization
@@ -220,9 +219,12 @@ def controller(screen):
                 date += datetime.timedelta(days=1)
                 # TODO check date not in future
 
+                cmdbar.status = 'Loading articles...'
+
                 search_results = queries.execute(date)
 
                 titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
+                cmdbar.status = 'Select an article for more details'
 
                 # draw_listview(content_window, search_results, curs_ind)
                 view = ListView(content_window, search_results)
@@ -234,9 +236,12 @@ def controller(screen):
                 # curs_ind = 0
                 date -= datetime.timedelta(days=1)
 
+                cmdbar.status = 'Loading articles...'
+
                 search_results = queries.execute(date)
 
                 titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
+                cmdbar.status = 'Select an article for more details'
 
                 # draw_listview(content_window, search_results, curs_ind)
                 view = ListView(content_window, search_results)
