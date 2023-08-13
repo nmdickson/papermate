@@ -89,9 +89,7 @@ class Article:
         if full list fits, use that, otherwise use et al.
         '''
 
-        auth_str = '; '.join(self.authors)
-
-        authors = tw.wrap(auth_str, width)
+        authors = tw.wrap(self.authors, width)
 
         if len(authors) > 1:
             return self.first_author.split(',')[0] + ' et al.'
