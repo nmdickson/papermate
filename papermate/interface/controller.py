@@ -213,12 +213,12 @@ def controller(screen):
             # Change dates
             # --------------------------------------------------------------
 
-            elif cmd == DATE_UP:
+            elif cmd in (DATE_UP, DATE_DOWN):
 
-                logging.info('Moving date up')
+                logging.info('Moving date')
 
-                # curs_ind = 0
-                date += datetime.timedelta(days=1)
+                td = 1 if cmd == DATE_UP else -1
+                date += datetime.timedelta(days=td)
                 # TODO check date not in future
 
                 cmdbar.status = 'Loading articles...'
@@ -234,30 +234,6 @@ def controller(screen):
                 titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
                 cmdbar.status = 'Select an article for more details'
 
-                # draw_listview(content_window, search_results, curs_ind)
-                view = ListView(content_window, search_results)
-
-            elif cmd == DATE_DOWN:
-
-                logging.info('Moving date down')
-
-                # curs_ind = 0
-                date -= datetime.timedelta(days=1)
-
-                cmdbar.status = 'Loading articles...'
-
-                if date in cache:
-                    logging.info(f'reading this {date=} from cache')
-                    search_results = cache[date]
-
-                else:
-                    search_results = queries.execute(date)
-                    cache.cache_results(date, search_results)
-
-                titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
-                cmdbar.status = 'Select an article for more details'
-
-                # draw_listview(content_window, search_results, curs_ind)
                 view = ListView(content_window, search_results)
 
             # --------------------------------------------------------------
