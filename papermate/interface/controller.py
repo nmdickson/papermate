@@ -3,7 +3,7 @@ import datetime
 import curses as cs
 
 from .interface import TitleBar, CommandBar, ListView, DetailedView
-from ..queries import QuerySet
+from ..queries import QuerySet, Cache
 
 
 __all__ = ["controller"]
@@ -120,6 +120,8 @@ def controller(screen):
 
     search_results = queries.execute(date)
 
+    cache = Cache({date: search_results})
+
     logging.info('Articles loaded')
 
     current_article = None
@@ -221,7 +223,13 @@ def controller(screen):
 
                 cmdbar.status = 'Loading articles...'
 
-                search_results = queries.execute(date)
+                if date in cache:
+                    logging.info(f'reading this {date=} from cache')
+                    search_results = cache[date]
+
+                else:
+                    search_results = queries.execute(date)
+                    cache.cache_results(date, search_results)
 
                 titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
                 cmdbar.status = 'Select an article for more details'
@@ -238,7 +246,13 @@ def controller(screen):
 
                 cmdbar.status = 'Loading articles...'
 
-                search_results = queries.execute(date)
+                if date in cache:
+                    logging.info(f'reading this {date=} from cache')
+                    search_results = cache[date]
+
+                else:
+                    search_results = queries.execute(date)
+                    cache.cache_results(date, search_results)
 
                 titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
                 cmdbar.status = 'Select an article for more details'

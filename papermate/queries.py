@@ -2,6 +2,7 @@ import ads
 
 import datetime
 import itertools
+from collections import UserDict
 
 from .articles import Article
 
@@ -119,3 +120,30 @@ class QuerySetResult:
         self.queries = [r.query for r in results]
         self.results = results
         self.articles = list(itertools.chain(*[r.articles for r in results]))
+
+
+class Cache(UserDict):
+    '''simple subclass for storing a cache of query results for various dates'''
+
+    def _coerce_date(self, date):
+        '''coerce a given date to a string'''
+        try:
+            return f'{date:%Y-%m-%d}z00:00'
+        except ValueError:
+            mssg = "Can only cache items with date as key"
+            raise ValueError(mssg)
+
+    def __setitem__(self, key, value):
+        super().__setitem__(self._coerce_date(key), value)
+
+    def __getitem__(self, key):
+        return super().__getitem__(self._coerce_date(key))
+
+    def __contains__(self, key):
+        return super().__contains__(self._coerce_date(key))
+
+    def cached_dates(self):
+        return [datetime.date.fromisoformat(d.strip("z00:00")) for d in self]
+
+    def cache_results(self, date, results):
+        self.__setitem__(date, results)
