@@ -487,7 +487,12 @@ class DetailedView:
         abs_win = self.window.derwin(len(abstract), self.abs_width, y, x)
 
         for ind, line in enumerate(abstract):
-            abs_win.addstr(ind, 0, line)
+
+            try:
+                abs_win.addstr(ind, 0, line)
+            except cs.error:
+                # just in case, because curses can't write to lower-right corner
+                pass
 
         y += len(abstract) + 1
 
