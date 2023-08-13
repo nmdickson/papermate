@@ -98,7 +98,7 @@ def controller(screen):
 
     titlebar, content_window, cmdbar = initialize_screen(screen)
 
-    curs_ind = 0
+    # curs_ind = 0
 
     logging.info('Screen initialized')
 
@@ -171,9 +171,9 @@ def controller(screen):
 
                 logging.info('Selecting article')
 
-                view = 'detailed'
+                # view = 'detailed'
 
-                current_article = search_results.articles[curs_ind]
+                current_article = search_results.articles[view.curs_ind]
 
                 titlebar.title = f'Article Details'
 
@@ -192,7 +192,7 @@ def controller(screen):
 
                 logging.info('Going back')
 
-                view = 'list'
+                # view = 'list'
 
                 current_article = None
 
