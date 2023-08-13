@@ -322,20 +322,14 @@ class ListView:
                 # Abstract
                 # ----------------------------------------------------------------------
 
-                logging.info(f'------ drawing article abstract')
-                logging.info(f'-------- height={len(para["abstract"])}, '
-                             f'width={self.width}, {y=}, {x=}')
-
-                # short_abs = tw.shorten(article.abstract, 300, placeholder='...')
-                # short_abs = tw.wrap(short_abs, width)
-
-                abs_win = self.window.derwin(len(para['abstract']), self.width + 1,
+                abs_win = self.window.derwin(len(para['abstract']), self.width,
                                              y, x)
 
                 for ind, line in enumerate(para['abstract']):
-                    logging.info(f'-------- y={ind}, x={0}, '
-                                 f'{len(line)=}, {line=}')
-                    abs_win.addstr(ind, 0, line)
+                    try:
+                        abs_win.addstr(ind, 0, line)
+                    except cs.error:
+                        pass
 
                 y += len(para['abstract'])
 
