@@ -22,7 +22,7 @@ class Article:
 
         # identifiers
         self.bibcode = entry.bibcode
-        self._doi = entry.doi
+        self._doi = entry.doi if entry.doi is not None else []
         self.bibstem = entry.bibstem[0]
         self.bibgroup = entry.bibgroup
 
