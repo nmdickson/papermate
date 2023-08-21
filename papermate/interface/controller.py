@@ -128,7 +128,7 @@ def controller(screen):
 
     # view = 'list'
 
-    titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
+    titlebar.title = f'Daily arXiv feed'
 
     cmdbar.commands = {'z/x': 'Prev/Next Day', '\u21B3': 'Select Article'}
     cmdbar.status = 'Select an article for more details'
@@ -137,7 +137,7 @@ def controller(screen):
 
     logging.info('Initial view drawn')
 
-    view = ListView(content_window, search_results)
+    view = ListView(content_window, date, search_results)
 
     logging.info(f'Heres the class:  {view}')
     logging.info(f'  {view.max_height=}, {view.max_width=}')
@@ -198,7 +198,7 @@ def controller(screen):
 
                 current_article = None
 
-                titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
+                titlebar.title = f'Daily arXiv feed'
 
                 cmdbar.commands = {'z/x': 'Prev/Next Day',
                                    '\u21B3': 'Select Article'}
@@ -206,7 +206,7 @@ def controller(screen):
                 cmdbar.status = 'Select an article for more details'
 
                 # draw_listview(content_window, search_results, curs_ind)
-                view = ListView(content_window, search_results)
+                view = ListView(content_window, date, search_results)
                 # view.curs_ind =  TODO reset curs_ind to last value
 
             # --------------------------------------------------------------
@@ -219,7 +219,11 @@ def controller(screen):
 
                 td = 1 if cmd == DATE_UP else -1
                 date += datetime.timedelta(days=td)
-                # TODO check date not in future
+
+                # Check that this date isn't in the future
+                if date.date() > datetime.datetime.today().date():
+                    date -= datetime.timedelta(days=td)
+                    continue
 
                 cmdbar.status = 'Loading articles...'
 
@@ -231,44 +235,24 @@ def controller(screen):
                     search_results = queries.execute(date)
                     cache.cache_results(date, search_results)
 
-                titlebar.title = f'Daily arXiv feed ({date:%Y-%m-%d})'
+                titlebar.title = f'Daily arXiv feed'
                 cmdbar.status = 'Select an article for more details'
 
-                view = ListView(content_window, search_results)
+                view = ListView(content_window, date, search_results)
 
             # --------------------------------------------------------------
             # Scroll through articles
             # --------------------------------------------------------------
 
-            # TODO not good to redraw entire thing each time tbh
-
             elif cmd == CURS_UP:
 
                 logging.info('Moving cursor up')
-
-                # curs_ind -= 1
-
-                # if curs_ind < 0:
-                #     curs_ind = 0
-
-                # logging.info(f'New cursor index: {curs_ind}')
-
-                # draw_listview(content_window, search_results, curs_ind)
 
                 view.move_cursor('up')
 
             elif cmd == CURS_DOWN:
 
                 logging.info('Moving cursor down')
-
-                # curs_ind += 1
-
-                # if curs_ind >= len(search_results.articles):
-                #     curs_ind = len(search_results.articles) - 1
-
-                # logging.info(f'New cursor index: {curs_ind}')
-
-                # draw_listview(content_window, search_results, curs_ind)
 
                 view.move_cursor('down')
 

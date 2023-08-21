@@ -5,6 +5,27 @@ import datetime
 import logging
 
 
+def humanize_date(date, relative=True):
+
+    out = date.strftime('%A %B %-d, %Y')
+
+    if relative:
+        diff = (datetime.datetime.today().date() - date.date()).days
+
+        suffix = 'ago' if diff >= 0 else 'from now'
+
+        if diff == 0:
+            out += " (today)"
+
+        elif diff == 1:
+            out += " (yesterday)"
+
+        else:
+            out += f" ({diff} days {suffix})"
+
+    return out
+
+
 class TitleBar:
 
     @property
@@ -118,11 +139,13 @@ class ListView:
 
     type = 'list'
 
-    def __init__(self, window, query_res):
+    def __init__(self, window, date, query_res):
 
         self.window = window
 
         self.window.clear()
+
+        self.date_title = humanize_date(date)
 
         self.max_height, self.max_width = self.window.getmaxyx()
 
@@ -216,7 +239,10 @@ class ListView:
 
         logging.info(f'--drawing {content}')
 
-        y = 2
+        self.window.addstr(1, (self.max_width - len(self.date_title)) // 2,
+                           self.date_title, cs.A_ITALIC)
+
+        y = 3
         # max_height, max_width = self.window.getmaxyx()
 
         # query_col_width = 30
@@ -284,23 +310,14 @@ class ListView:
                 # Title
                 # ----------------------------------------------------------------------
 
-                logging.info(f'------ drawing article title')
-
                 # bibcode = para['bibcode']
 
                 # title = tw.wrap(para['title'], width - len(bibcode) - 5)
-
-                logging.info(f'-------- height={len(para["title"])}, '
-                             f'width={self.width}, {y=}, {x=}')
 
                 title_win = self.window.derwin(len(para['title']),
                                                self.width + 1, y, x)
 
                 for ind, line in enumerate(para['title']):
-
-                    logging.info(f'-------- y={ind}, x={0}, '
-                                 f'{len(line)=}, {line=}')
-
                     title_win.addstr(ind, 0, line, cs.A_BOLD)
 
                 title_win.addstr(0, self.width - len(para['bibcode']),
@@ -311,8 +328,6 @@ class ListView:
                 # ----------------------------------------------------------------------
                 # Author
                 # ----------------------------------------------------------------------
-
-                logging.info(f'------ drawing article author')
 
                 self.window.addstr(y, x, para['authors'], cs.A_DIM)
 
