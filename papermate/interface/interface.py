@@ -139,7 +139,7 @@ class ListView:
 
     type = 'list'
 
-    def __init__(self, window, date, query_res):
+    def __init__(self, window, date, query_res, *, curs_ind=0, page=0):
 
         self.window = window
 
@@ -156,8 +156,8 @@ class ListView:
         # self.height = self.max_height - 2
         self.height = self.max_height
 
-        self.curs_ind = 0
-        self.page = 0
+        self.curs_ind = curs_ind
+        self.page = page
 
         self._query_res = query_res
 

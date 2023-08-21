@@ -93,12 +93,7 @@ def controller(screen):
 
     cs.curs_set(0)
 
-    # get info about total screen size, for sizing of windows
-    height, width = screen.getmaxyx()
-
     titlebar, content_window, cmdbar = initialize_screen(screen)
-
-    # curs_ind = 0
 
     logging.info('Screen initialized')
 
@@ -173,8 +168,6 @@ def controller(screen):
 
                 logging.info('Selecting article')
 
-                # view = 'detailed'
-
                 current_article = search_results.articles[view.curs_ind]
 
                 titlebar.title = f'Article Details'
@@ -183,7 +176,6 @@ def controller(screen):
                                    'b': 'return'}
                 cmdbar.status = ''
 
-                # draw_detailedview(content_window, current_article)
                 view = DetailedView(content_window, current_article)
 
             # --------------------------------------------------------------
@@ -194,8 +186,6 @@ def controller(screen):
 
                 logging.info('Going back')
 
-                # view = 'list'
-
                 current_article = None
 
                 titlebar.title = f'Daily arXiv feed'
@@ -205,7 +195,6 @@ def controller(screen):
 
                 cmdbar.status = 'Select an article for more details'
 
-                # draw_listview(content_window, search_results, curs_ind)
                 view = ListView(content_window, date, search_results)
                 # view.curs_ind =  TODO reset curs_ind to last value
 
@@ -275,6 +264,24 @@ def controller(screen):
                 cmdbar.status = 'Opening in browser...'
                 current_article.open_online()
                 cmdbar.status = ''
+
+        # ------------------------------------------------------------------
+        # Resize terminal
+        # ------------------------------------------------------------------
+
+        elif cmd == cs.KEY_RESIZE:
+            logging.info('Resizing the terminal')
+
+            # get the base screen
+            titlebar, content_window, cmdbar = initialize_screen(screen)
+
+            # have to recreate view due to fixed content sizes at inits
+            if view.type == 'list':
+                view = ListView(content_window, date, search_results,
+                                curs_ind=view.curs_ind, page=view.page)
+
+            elif view.type == 'detailed':
+                view = DetailedView(content_window, current_article)
 
         # ------------------------------------------------------------------
         # Quit program
