@@ -168,7 +168,7 @@ def controller(screen):
 
                 logging.info('Selecting article')
 
-                current_article = search_results.articles[view.curs_ind]
+                current_article = search_results.articles[view.selection_ind]
 
                 titlebar.title = f'Article Details'
 
@@ -176,7 +176,8 @@ def controller(screen):
                                    'b': 'return'}
                 cmdbar.status = ''
 
-                view = DetailedView(content_window, current_article)
+                view = DetailedView(content_window, current_article,
+                                    curs_ind=view.curs_ind, page=view.page)
 
             # --------------------------------------------------------------
             # exit detailed (SWITCH TO LIST VIEW)
@@ -195,8 +196,8 @@ def controller(screen):
 
                 cmdbar.status = 'Select an article for more details'
 
-                view = ListView(content_window, date, search_results)
-                # view.curs_ind =  TODO reset curs_ind to last value
+                view = ListView(content_window, date, search_results,
+                                curs_ind=view.curs_ind, page=view.page)
 
             # --------------------------------------------------------------
             # Change dates

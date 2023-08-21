@@ -139,6 +139,10 @@ class ListView:
 
     type = 'list'
 
+    @property
+    def selection_ind(self):
+        return sum(self.Narticles[:self.page]) + self.curs_ind
+
     def __init__(self, window, date, query_res, *, curs_ind=0, page=0):
 
         self.window = window
@@ -428,10 +432,14 @@ class DetailedView:
 
     type = 'detailed'
 
-    def __init__(self, window, article):
+    def __init__(self, window, article, *, curs_ind=0, page=0):
 
         self.window = window
         self.article = article
+
+        # optionally store this articles position for outside use
+        self.curs_ind = curs_ind
+        self.page = page
 
         self.window.clear()
 
