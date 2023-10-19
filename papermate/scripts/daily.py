@@ -7,5 +7,6 @@ import logging
 
 logging.basicConfig(filename='pmate.log', filemode='w', level=logging.DEBUG)
 
-if __name__ == '__main__':
+
+def main():
     cs.wrapper(papermate.controller)

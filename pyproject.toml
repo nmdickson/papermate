@@ -1,0 +1,36 @@
+[project]
+name = "papermate"
+version = "1.0.0"
+description = "Daily ADS feed of arXiv papers"
+authors = [
+    {name = "Nolan Dickson", email = "ndickson@protonmail.com"},
+]
+readme = "README.md"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+dependencies = [
+    "ads"
+]
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Environment :: Console :: Curses",
+  "License :: OSI Approved :: MIT License",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Astronomy",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.urls]
+repository = "https://github.com/nmdickson/papermate.git"
+
+[project.scripts]
+papermate-daily = "papermate.scripts:daily.main"
+
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
