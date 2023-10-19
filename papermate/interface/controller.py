@@ -2,7 +2,8 @@ import logging
 import datetime
 import curses as cs
 
-from .interface import TitleBar, CommandBar, ListView, DetailedView
+from .interface import TitleBar, CommandBar
+from .interface import ListView, DetailedView, NoConfigView
 from ..queries import QuerySet, Cache
 
 
@@ -80,6 +81,27 @@ def initialize_screen(screen):
     return titlebar, content_window, cmdbar
 
 
+def flash_error(screen, view, *args, titlebar=None, cmdbar=None, **kwargs):
+    '''Put up a single stationary view representing an error of some sort'''
+
+    logging.info(f'Flashing error through {view}')
+
+    view = view(*args, **kwargs)
+
+    if titlebar is not None:
+        titlebar.title = f'ERROR - {view.title}'
+
+    if cmdbar is not None:
+        cmdbar.commands = {}
+        cmdbar.status = 'Please resolve error and restart'
+
+    # TODO doesnt handle screen resize, would be better to make part of mainloop
+    while screen.getch() not in EXIT_CMDS:
+        continue
+    else:
+        raise SystemExit
+
+
 def controller(screen):
     '''designed to be used by a curses wrapper `curses.wrapper(controller)`'''
 
@@ -109,9 +131,8 @@ def controller(screen):
     queries = QuerySet.from_configfile(config_file)
 
     if len(queries) == 0:
-        mssg = f"No queries found in config file {config_file}. Please add some"
-        print(mssg)
-        return
+        return flash_error(screen, NoConfigView, content_window, config_file,
+                           titlebar=titlebar, cmdbar=cmdbar)
 
     search_results = queries.execute(date)
 
@@ -262,6 +283,7 @@ def controller(screen):
 
                 logging.info('Opening in browser')
 
+                # TODO how to stop xdg-open's stdout calls?
                 cmdbar.status = 'Opening in browser...'
                 current_article.open_online()
                 cmdbar.status = ''

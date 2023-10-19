@@ -43,7 +43,7 @@ class TitleBar:
 
         _, self.width = window.getmaxyx()
 
-        self.version = 'papermate (0.1)'
+        self.version = 'papermate (1.0)'
 
         self.title = ''
 
@@ -556,3 +556,66 @@ class DetailedView:
         info_win.addstr(0, 1, 'INFO')
 
         self.window.refresh()
+
+
+class ErrorView:
+
+    type = 'error'
+
+    title = 'Error'
+    message = 'Error message'
+
+    def __init__(self, window):
+
+        self.window = window
+
+        self.window.clear()
+
+        max_height, max_width = self.window.getmaxyx()
+
+        self.height = max_height
+        self.width = max_width - (2 * 4)
+
+        self.draw()
+
+    def draw(self):
+        import textwrap as tw
+
+        # Split message on newlines and wrap, if necessary
+        # for fully empty lines, place whitespace between two "\n \n" in message
+
+        mssg = self.message.split('\n')
+        wrap_mssg = sum(
+            [tw.wrap(s, self.width, drop_whitespace=False) for s in mssg], []
+        )
+
+        y = (self.height - len(wrap_mssg)) // 2
+
+        # Write out each line, centre-aligned as possible
+
+        for ind, line in enumerate(wrap_mssg, y):
+            x = 4 + (self.width - len(line)) // 2
+            self.window.addstr(ind, x, line, cs.A_BOLD)
+
+        # refresh screen
+
+        self.window.refresh()
+
+
+class NoConfigView(ErrorView):
+
+    @property
+    def title(self):
+        return "Empty Config File"  # get autocreated so it's empty, not missing
+
+    @property
+    def message(self):
+        mssg = (f'No queries were found in the papermate config file at '
+                f'"{self.config_file}"\n \n'
+                f"Please add at least one query. "
+                f"See documentation for examples")
+        return mssg
+
+    def __init__(self, window, config_file):
+        self.config_file = config_file
+        super().__init__(window=window)
