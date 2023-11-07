@@ -90,13 +90,15 @@ class QuerySet:
 
     @classmethod
     def from_configfile(cls, config):
-        import configparser
-        # TODO change config files to toml files and use tomllib when 3.11
+        try:
+            import tomllib as toml
+        except ImportError:
+            import tomli as toml
 
-        cfg = configparser.ConfigParser()
-        cfg.read(config)
+        with open(config, 'rb') as oconf:
+            cfg = toml.load(oconf)
 
-        return cls([Query(**cfg[sec]) for sec in cfg.sections()])
+        return cls([Query(name=name, **sec) for name, sec in cfg.items()])
 
     def __init__(self, queries):
 

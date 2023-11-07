@@ -39,7 +39,7 @@ def get_config_file():
 
     datadir = f"{pathlib.Path.home()}/.config"
 
-    fn = f"{datadir}/papermate.ini"
+    fn = f"{datadir}/papermate.toml"
 
     try:
         # If file does not exist, create it (x mode fails if exists)
