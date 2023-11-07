@@ -10,6 +10,28 @@ from .articles import Article
 __all__ = ['Query', 'QuerySet']
 
 
+second_order_operations = (
+    "similar", "reviews", "trending", "useful", "citations"
+)
+
+
+def _gen_q(**search_terms):
+    '''If necessary for some reason, format a "q" query string, for `ads`'''
+    import re
+
+    q = ""
+
+    for field, value in search_terms.items():
+
+        # Wrap value in quotes if not already in parentheses
+        if not re.match(r'\s*\(.*\)\s*', value):
+            value = '"{}"'.format(value)
+
+        q += ' {}:{}'.format(field, value)
+
+    return q
+
+
 class Query:
     '''all the things that go into making an ADS query
 
@@ -24,26 +46,46 @@ class Query:
     ]
 
     def __str__(self):
-        return f'{self.keywords} - {self.arxiv_class}'
+        return f'{self.name} - {self.arxiv_class}'
 
     def column_str(self, width=30):
         import textwrap as tw
 
         if width is None:
-            return [self.keywords, self.arxiv_class]
+            return [self.name, self.arxiv_class]
 
         else:
-            return (tw.wrap(self.keywords, width)
+            return (tw.wrap(self.name, width)
                     + tw.wrap(self.arxiv_class, width))
 
-    def __init__(self, keywords, bibstem='arxiv', arxiv_class='astro-ph.*',
-                 **search_terms):
+    def __init__(self, name, bibstem='arxiv',
+                 arxiv_class='astro-ph.*', **search_terms):
 
-        self.keywords = keywords
+        self.name = name
+
+        q = ""
+
+        seconds = []
+
+        for term, val in search_terms.items():
+
+            if term in second_order_operations:
+                seconds.append(term)
+
+                if not isinstance(val, dict):
+                    mssg = (f"{term} is a (second order) operator, requires "
+                            f"subtable with (first order) query.")
+                    raise ValueError(mssg)
+
+                q += f" {term}({_gen_q(**val)})"
+
+        for term in seconds:
+            del search_terms[term]
+
         self.arxiv_class = arxiv_class
 
         self._query_dict = dict(
-            full=keywords,
+            q=q,
             bibstem=bibstem,
             arxiv_class=arxiv_class,
             **search_terms
