@@ -237,7 +237,7 @@ class ListView:
 
         self.window.clear()
 
-        logging.info(f'drawing page {self.page}')
+        logging.info(f'drawing page {self.page} (cursor {self.curs_ind})')
 
         content = self._pages[self.page]
 
@@ -358,12 +358,15 @@ class ListView:
 
         self.window.refresh()
 
-    def scroll(self, direction, *, strict=False, redraw=True):
+    def scroll(self, direction, *, strict=False, redraw=True, set_cursor=False):
         '''scroll this page up or down'''
 
         if direction == 'up':
 
             self.page -= 1
+
+            if set_cursor:
+                self.curs_ind = 0
 
             if self.page < 0:
 
@@ -377,6 +380,9 @@ class ListView:
 
             self.page += 1
 
+            if set_cursor:
+                self.curs_ind = 0
+
             if self.page >= self.Npages:
 
                 self.page = self.Npages - 1
@@ -384,6 +390,9 @@ class ListView:
                 if strict:
                     mssg = f'Hitting lower bound (page={self.page})'
                     raise RuntimeError(mssg)
+
+                if set_cursor:
+                    self.curs_ind = self.Narticles[self.page] - 1
 
         if redraw:
             self.draw()

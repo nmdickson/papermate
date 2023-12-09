@@ -12,6 +12,8 @@ __all__ = ["controller"]
 
 DATE_UP, DATE_DOWN = ord('x'), ord('z')
 CURS_UP, CURS_DOWN = cs.KEY_UP, cs.KEY_DOWN
+CURS_SUP, CURS_SDOWN = cs.KEY_SR, cs.KEY_SF
+
 
 SELECT = (ord('\n'), ord('\r'), cs.KEY_ENTER)
 
@@ -21,7 +23,7 @@ DOWNLOAD, ONLINE = ord('d'), ord('o')
 
 COMMANDS = {
     'list': {
-        DATE_UP, DATE_DOWN, CURS_UP, CURS_DOWN, *SELECT
+        DATE_UP, DATE_DOWN, CURS_UP, CURS_DOWN, CURS_SUP, CURS_SDOWN, *SELECT
     },
     'detailed': {
         DOWNLOAD, ONLINE, *BACK
@@ -266,6 +268,18 @@ def controller(screen):
                 logging.info('Moving cursor down')
 
                 view.move_cursor('down')
+
+            elif cmd == CURS_SUP:
+
+                logging.info('Moving page up')
+
+                view.scroll('up', set_cursor=True)
+
+            elif cmd == CURS_SDOWN:
+
+                logging.info('Moving page down')
+
+                view.scroll('down', set_cursor=True)
 
             # --------------------------------------------------------------
             # Commands for interacting with articles in detailed view
