@@ -29,7 +29,9 @@ test = ["pytest"]
 repository = "https://github.com/nmdickson/papermate.git"
 
 [project.scripts]
-papermate-daily = "papermate.scripts:daily.main"
+papermate = "papermate.scripts:base.main"
+papermate-daily = "papermate.scripts:base.daily"
+papermate-library = "papermate.scripts:base.library"
 
 [build-system]
 requires = ["hatchling"]
