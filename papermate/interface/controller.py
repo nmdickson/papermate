@@ -3,7 +3,7 @@ import datetime
 import curses as cs
 
 from .interface import TitleBar, CommandBar
-from .interface import ListView, DetailedView, NoConfigView
+from .interface import ListView, DetailedView, NoConfigView, BaseView
 from ..queries import QuerySet, Cache
 
 
@@ -104,10 +104,87 @@ def flash_error(screen, view, *args, titlebar=None, cmdbar=None, **kwargs):
         raise SystemExit
 
 
-def controller(screen):
+def controller(screen, mode=None):
     '''designed to be used by a curses wrapper `curses.wrapper(controller)`'''
 
-    logging.info('starting log')
+    screen.clear()
+
+    if mode is None:
+        # bring up an options screen with each of these options available
+        base_controller(screen)
+
+    elif mode.lower() == 'daily':
+        # return daily_controller()
+        daily_controller(screen)
+
+    elif mode.lower() == 'library':
+        library_controller(screen)
+
+    elif mode.lower() == 'help':
+        help_controller(screen)
+
+    elif mode.lower() == 'exit':
+        raise SystemExit
+
+    else:
+        mssg = f"Unrecognized mode {mode}"
+        raise ValueError(mssg)
+
+
+def base_controller(screen):
+
+    logging.info('starting log - base controller')
+
+    # ----------------------------------------------------------------------
+    # Screen initialization
+    # ----------------------------------------------------------------------
+
+    cs.curs_set(0)
+
+    titlebar, content_window, cmdbar = initialize_screen(screen)
+
+    titlebar.title = f''
+
+    cmdbar.commands = {'\u21B3': 'Select mode'}
+    cmdbar.status = 'Select a mode for using papermate'
+
+    logging.info('Screen initialized')
+
+    view = BaseView(content_window)
+
+    while True:
+
+        cmd = screen.getch()
+
+        if cmd in SELECT:
+
+            logging.info(f'Selecting Mode {view.selection}')
+
+            controller(screen, mode=view.selection)
+
+        elif cmd == CURS_UP:
+
+            logging.info('Moving cursor up')
+
+            view.move_cursor('up')
+
+        elif cmd == CURS_DOWN:
+
+            logging.info('Moving cursor down')
+
+            view.move_cursor('down')
+
+        elif cmd in EXIT_CMDS:
+            raise SystemExit
+
+        else:
+            continue
+
+
+def daily_controller(screen):
+    '''curses controller function for the daily listing functionality'''
+
+    logging.info('starting log - daily controller')
 
     date = datetime.datetime.today()
 
@@ -331,3 +408,11 @@ def controller(screen):
         # some other inconsequential cmd
         else:
             continue
+
+
+def library_controller(screen):
+    pass
+
+
+def help_controller(screen):
+    pass

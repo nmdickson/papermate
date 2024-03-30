@@ -567,6 +567,76 @@ class DetailedView:
         self.window.refresh()
 
 
+class BaseView:
+
+    @property
+    def selection(self):
+        return self.options[self.curs_ind]
+
+    def __init__(self, window):
+
+        self.window = window
+
+        self.curs_ind = 0
+
+        self.window.clear()
+
+        self.max_height, self.max_width = self.window.getmaxyx()
+
+        self.height = self.max_height
+        self.width = self.max_width
+
+        self.options = ("Daily", "Library", "Help", "Exit")
+
+        self.draw()
+
+    def draw(self):
+
+        # in the middle of the screen, draw 4 boxes ("buttons"), one
+        # for each possible mode (daily, library, help) and for "quit"
+
+        button_height = 5
+        button_width = 17
+
+        x = (self.width - button_width) // 2
+        y = (self.height - (button_height * len(self.options))) // 2 - 1
+
+        # Draw squares
+        for ind, lbl in enumerate(self.options):
+
+            button_win = self.window.derwin(button_height, button_width, y, x)
+
+            button_win.border()
+
+            lbl_x = (((button_width - 2) - len(lbl)) // 2) + 1
+
+            button_win.addstr(2, lbl_x, lbl)
+
+            if ind == self.curs_ind:
+                for yi in range(1, 4):
+                    button_win.addch(yi, 0, ">")
+                    button_win.addch(yi, button_width - 1, "<")
+
+            y += ((button_height + 1))
+
+        self.window.refresh()
+
+    def move_cursor(self, direction):
+        '''move the cursor up or down'''
+
+        # TODO really sucks to redraw the entire window each time
+
+        if direction == 'up':
+
+            self.curs_ind = max(0, self.curs_ind - 1)
+
+        elif direction == 'down':
+
+            self.curs_ind = min(len(self.options) - 1, self.curs_ind + 1)
+
+        self.draw()
+
+
 class ErrorView:
 
     type = 'error'
