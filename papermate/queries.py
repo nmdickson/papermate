@@ -1,18 +1,27 @@
 import ads
+import ads.libraries
 
 import datetime
 import itertools
-from collections import UserDict
 
 from .articles import Article
 
 
-__all__ = ['Query', 'QuerySet']
+__all__ = ['Query', 'QuerySet', 'Library']
 
 
 second_order_operations = (
     "similar", "reviews", "trending", "useful", "citations"
 )
+
+
+def get_user_libraries():
+    q = ads.base.BaseQuery()
+    base_url = ads.libraries.Library._libraries_url
+
+    response = q.session.get(base_url).json()['libraries']
+
+    return {d['name']: d['id'] for d in response}
 
 
 def _gen_q(**search_terms):
@@ -166,28 +175,29 @@ class QuerySetResult:
         self.articles = list(itertools.chain(*[r.articles for r in results]))
 
 
-class Cache(UserDict):
-    '''simple subclass for storing a cache of query results for various dates'''
+class Library(QueryResult):
 
-    def _coerce_date(self, date):
-        '''coerce a given date to a string'''
-        try:
-            return f'{date:%Y-%m-%d}z00:00'
-        except ValueError:
-            mssg = "Can only cache items with date as key"
-            raise ValueError(mssg)
+    _fl = [
+        'author', 'title', 'year', 'pubdate',
+        'doi', 'bibcode', 'bibstem', 'bibgroup', 'identifier',
+        'abstract', 'aff', 'keyword',
+        'page', 'read_count'
+    ]
 
-    def __setitem__(self, key, value):
-        super().__setitem__(self._coerce_date(key), value)
+    @property
+    def name(self):
+        return self.query.metadata['name']
 
-    def __getitem__(self, key):
-        return super().__getitem__(self._coerce_date(key))
+    @property
+    def description(self):
+        return self.query.metadata['description']
 
-    def __contains__(self, key):
-        return super().__contains__(self._coerce_date(key))
+    def __init__(self, id_):
 
-    def cached_dates(self):
-        return [datetime.date.fromisoformat(d.strip("z00:00")) for d in self]
+        lib = ads.libraries.Library(id_)
 
-    def cache_results(self, date, results):
-        self.__setitem__(date, results)
+        result = lib.get_documents(fl=self._fl)
+
+        result.execute()
+
+        super().__init__(lib, result)

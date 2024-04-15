@@ -35,7 +35,7 @@ class Article:
             self.arxiv_id = None
 
         # extra frontmatter
-        self.abstract = entry.abstract
+        self.abstract = entry.abstract or "No abstract"
         self._affiliations = entry.aff
         self.keywords = entry.keyword
 

@@ -3,14 +3,19 @@ import datetime
 import curses as cs
 
 from .interface import TitleBar, CommandBar
-from .interface import ListView, DetailedView, NoConfigView, BaseView
-from ..queries import QuerySet, Cache
+from .interface import ListView, LibraryView, DetailedView
+from .interface import NoConfigView, BaseView
+from ..queries import QuerySet, Library
+from ..utils import get_user_libraries, create_default_library
+from ..utils import prev, BidirectionalCycler, Cache, DateCache
 
 
 __all__ = ["controller"]
 
 
-DATE_UP, DATE_DOWN = ord('x'), ord('z')
+DATE_UP = LIB_UP = ord('x')
+DATE_DOWN = LIB_DOWN = ord('z')
+
 CURS_UP, CURS_DOWN = cs.KEY_UP, cs.KEY_DOWN
 CURS_SUP, CURS_SDOWN = cs.KEY_SR, cs.KEY_SF
 
@@ -27,12 +32,18 @@ COMMANDS = {
     },
     'detailed': {
         DOWNLOAD, ONLINE, *BACK
+    },
+    'library': {
+        LIB_UP, LIB_DOWN, CURS_UP, CURS_DOWN, CURS_SUP, CURS_SDOWN, *SELECT
     }
 }
 
 EXIT_CMDS = {
     ord('q'), 'ctrl-c', 27  # Escape key = 27, but there is a huge delay
 }
+
+
+DEFAULT_LIBRARY = 'papermate'
 
 
 def get_config_file():
@@ -215,7 +226,7 @@ def daily_controller(screen):
 
     search_results = queries.execute(date)
 
-    cache = Cache({date: search_results})
+    cache = DateCache({date: search_results})
 
     logging.info('Articles loaded')
 
@@ -411,7 +422,230 @@ def daily_controller(screen):
 
 
 def library_controller(screen):
-    pass
+    '''curses controller function for the daily listing functionality'''
+
+    logging.info('starting log - library controller')
+
+    date = datetime.datetime.today()
+
+    # ----------------------------------------------------------------------
+    # Screen initialization
+    # ----------------------------------------------------------------------
+
+    cs.curs_set(0)
+
+    titlebar, content_window, cmdbar = initialize_screen(screen)
+
+    logging.info('Screen initialized')
+
+    # ----------------------------------------------------------------------
+    # Gather initial article list, draw initial list view
+    # ----------------------------------------------------------------------
+
+    logging.info('Loading library')
+
+    # TODO maybe while loading blank the screen or add a loading symbol?
+
+    cmdbar.status = 'Loading library...'
+
+    library_map = get_user_libraries()
+
+    if DEFAULT_LIBRARY not in library_map:
+        library_map |= create_default_library()
+
+    library_cycle = BidirectionalCycler(library_map)
+
+    id_ = library_map[DEFAULT_LIBRARY]
+
+    library = Library(id_)
+
+    cache = Cache({id_: library})
+
+    logging.info('Library loaded')
+
+    current_article = None
+
+    # view = 'list'
+
+    titlebar.title = f'NASA ADS Library'
+
+    cmdbar.commands = {'z/x': 'Prev/Next Library', '\u21B3': 'Select Article'}
+
+    cmdbar.status = 'Select an article for more details'
+
+    logging.info('Initial view drawn')
+
+    view = LibraryView(content_window, library)
+
+    logging.info(f'Heres the class:  {view}')
+    logging.info(f'  {view.max_height=}, {view.max_width=}')
+    logging.info(f'  {view.height=}, {view.width=}')
+    logging.info(f'  {view._pages=}')
+
+    logging.info('trying to draw it')
+
+    # ----------------------------------------------------------------------
+    # Mainloop
+    # ----------------------------------------------------------------------
+
+    while True:
+
+        cmd = screen.getch()
+
+        logging.info(f'received command : {cmd} ({chr(cmd)})')
+
+        # check that cmd is right for this view
+        if cmd in COMMANDS[view.type]:
+
+            logging.info('Command is valid')
+
+            # commands
+
+            # --------------------------------------------------------------
+            # article select (SWITCH TO DETAILED VIEW)
+            # --------------------------------------------------------------
+
+            if cmd in SELECT:
+
+                logging.info('Selecting article')
+
+                current_article = library.articles[view.selection_ind]
+
+                titlebar.title = f'Article Details'
+
+                cmdbar.commands = {'d': 'Download', 'o': 'View online',
+                                   'b': 'return'}
+                cmdbar.status = ''
+
+                view = DetailedView(content_window, current_article,
+                                    curs_ind=view.curs_ind, page=view.page)
+
+            # --------------------------------------------------------------
+            # exit detailed (SWITCH TO LIST VIEW)
+            # --------------------------------------------------------------
+
+            elif cmd in BACK:
+
+                logging.info('Going back')
+
+                current_article = None
+
+                titlebar.title = f'NASA ADS Library'
+
+                cmdbar.commands = {'z/x': 'Prev/Next Library',
+                                   '\u21B3': 'Select Article'}
+
+                cmdbar.status = 'Select an article for more details'
+
+                view = LibraryView(content_window, library,
+                                   curs_ind=view.curs_ind, page=view.page)
+
+            # --------------------------------------------------------------
+            # Change Library
+            # --------------------------------------------------------------
+
+            elif cmd in (LIB_UP, LIB_DOWN):
+
+                logging.info('Moving LIB')
+
+                mov = next if cmd == LIB_UP else prev
+
+                cmdbar.status = 'Loading articles...'
+
+                id_ = library_map[mov(library_cycle)]
+
+                if date in cache:
+                    logging.info(f'reading this {id_=} from cache')
+                    library = cache[id_]
+
+                else:
+                    library = Library(id_)
+                    cache.cache_results(id_, library)
+
+                titlebar.title = f'NASA ADS Library'
+                cmdbar.status = 'Select an article for more details'
+
+                view = LibraryView(content_window, library,
+                                   curs_ind=view.curs_ind, page=view.page)
+
+            # --------------------------------------------------------------
+            # Scroll through articles
+            # --------------------------------------------------------------
+
+            elif cmd == CURS_UP:
+
+                logging.info('Moving cursor up')
+
+                view.move_cursor('up')
+
+            elif cmd == CURS_DOWN:
+
+                logging.info('Moving cursor down')
+
+                view.move_cursor('down')
+
+            elif cmd == CURS_SUP:
+
+                logging.info('Moving page up')
+
+                view.scroll('up', set_cursor=True)
+
+            elif cmd == CURS_SDOWN:
+
+                logging.info('Moving page down')
+
+                view.scroll('down', set_cursor=True)
+
+            # --------------------------------------------------------------
+            # Commands for interacting with articles in detailed view
+            # --------------------------------------------------------------
+
+            elif cmd == DOWNLOAD:
+
+                logging.info('Downloading file')
+
+                cmdbar.status = 'Downloading file...'
+                current_article.download()
+                cmdbar.status = ''
+
+            elif cmd == ONLINE:
+
+                logging.info('Opening in browser')
+
+                # TODO how to stop xdg-open's stdout calls?
+                cmdbar.status = 'Opening in browser...'
+                current_article.open_online()
+                cmdbar.status = ''
+
+        # ------------------------------------------------------------------
+        # Resize terminal
+        # ------------------------------------------------------------------
+
+        elif cmd == cs.KEY_RESIZE:
+            logging.info('Resizing the terminal')
+
+            # get the base screen
+            titlebar, content_window, cmdbar = initialize_screen(screen)
+
+            # have to recreate view due to fixed content sizes at inits
+            if view.type == 'list':
+                view = LibraryView(content_window, library,
+                                   curs_ind=view.curs_ind, page=view.page)
+
+            elif view.type == 'detailed':
+                view = DetailedView(content_window, current_article)
+
+        # ------------------------------------------------------------------
+        # Quit program
+        # ------------------------------------------------------------------
+
+        elif cmd in EXIT_CMDS:
+            # do quitty stuff
+            raise SystemExit
+
+        # some other inconsequential cmd
+        else:
+            continue
 
 
 def help_controller(screen):

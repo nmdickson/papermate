@@ -143,7 +143,8 @@ class ListView:
     def selection_ind(self):
         return sum(self.Narticles[:self.page]) + self.curs_ind
 
-    def __init__(self, window, date, query_res, *, curs_ind=0, page=0):
+    def __init__(self, window, date, query_res, *, curs_ind=0, page=0,
+                 show_query_col=True):
 
         self.window = window
 
@@ -153,8 +154,9 @@ class ListView:
 
         self.max_height, self.max_width = self.window.getmaxyx()
 
-        self.query_col_width = int(0.1 * self.max_width)
-        self.width = self.max_width - (2 * (self.query_col_width + 4))
+        self.margin_width = int(0.1 * self.max_width)
+        self.query_col_width = self.margin_width if show_query_col else 0
+        self.width = self.max_width - (2 * (self.margin_width + 4))
 
         # self.height, self.width = self.max_height - 2, self.max_width - 20
         # self.height = self.max_height - 2
@@ -247,14 +249,6 @@ class ListView:
                            self.date_title, cs.A_ITALIC)
 
         y = 3
-        # max_height, max_width = self.window.getmaxyx()
-
-        # query_col_width = 30
-        # self.query_col_width = int(0.1 * max_width)
-
-        # 10 character buffer on either side
-        # width = max_width - 20
-        # width = max_width - (2 * (query_col_width + 4))
 
         art_ind = 0
 
@@ -276,11 +270,11 @@ class ListView:
                 xi = self.query_col_width - len(line)
                 self.window.addstr(y + dy, xi, line, cs.A_ITALIC)
 
-            x = self.query_col_width + (2 * 4)
+            x = self.margin_width + (2 * 4)
 
-            # ------------------------------------------------------------------
+            # --------------------------------------------------------------
             # If no articles found, note that
-            # ------------------------------------------------------------------
+            # --------------------------------------------------------------
 
             if articles is None:
 
@@ -292,9 +286,9 @@ class ListView:
 
                 continue
 
-            # ------------------------------------------------------------------
+            # --------------------------------------------------------------
             # List articles
-            # ------------------------------------------------------------------
+            # --------------------------------------------------------------
 
             for para in articles:
 
@@ -302,17 +296,17 @@ class ListView:
 
                 # y += 2
 
-                # ----------------------------------------------------------------------
+                # ----------------------------------------------------------
                 # Numeric label
-                # ----------------------------------------------------------------------
+                # ----------------------------------------------------------
 
                 marker = f'=> ' if self.curs_ind == art_ind else ''
                 self.window.addstr(y, x - len(marker), marker)
                 # width -= len(marker)
 
-                # ----------------------------------------------------------------------
+                # ----------------------------------------------------------
                 # Title
-                # ----------------------------------------------------------------------
+                # ----------------------------------------------------------
 
                 # bibcode = para['bibcode']
 
@@ -329,17 +323,17 @@ class ListView:
 
                 y += len(para['title'])
 
-                # ----------------------------------------------------------------------
+                # ----------------------------------------------------------
                 # Author
-                # ----------------------------------------------------------------------
+                # ----------------------------------------------------------
 
                 self.window.addstr(y, x, para['authors'], cs.A_DIM)
 
                 y += 1
 
-                # ----------------------------------------------------------------------
+                # ----------------------------------------------------------
                 # Abstract
-                # ----------------------------------------------------------------------
+                # ----------------------------------------------------------
 
                 abs_win = self.window.derwin(len(para['abstract']), self.width,
                                              y, x)
@@ -437,6 +431,114 @@ class ListView:
             self.draw()
 
 
+class LibraryView(ListView):
+
+    type = 'library'
+
+    def __init__(self, window, library, *, curs_ind=0, page=0):
+        date = datetime.datetime.today()
+
+        self.title = f'{library.name}'
+
+        super().__init__(window, date, {library.query.id: library},
+                         curs_ind=curs_ind, page=page, show_query_col=False)
+
+    def draw(self):
+        '''draw this page'''
+
+        self.window.clear()
+
+        logging.info(f'drawing page {self.page} (cursor {self.curs_ind})')
+
+        content = self._pages[self.page]
+
+        logging.info(f'--drawing {content}')
+
+        self.window.addstr(1, (self.max_width - len(self.title)) // 2,
+                           self.title, cs.A_ITALIC)
+
+        x, y = self.margin_width + 4, 3
+
+        art_ind = 0
+
+        page_label = f'pg. {self.page + 1}/{self.Npages}'
+        self.window.addstr(y, self.max_width - len(page_label) - 2,
+                           page_label, cs.A_ITALIC)
+
+        for articles in content.values():
+
+            # --------------------------------------------------------------
+            # If no articles found, note that
+            # --------------------------------------------------------------
+
+            if articles is None:
+
+                self.window.addstr(y, x, 'No articles found')
+
+                y += 3
+
+                continue
+
+            # --------------------------------------------------------------
+            # List articles
+            # --------------------------------------------------------------
+
+            for para in articles:
+
+                logging.info(f'------ drawing article {para}')
+
+                # ----------------------------------------------------------
+                # Numeric label
+                # ----------------------------------------------------------
+
+                marker = f'=> ' if self.curs_ind == art_ind else ''
+                self.window.addstr(y, x - len(marker), marker)
+
+                # ----------------------------------------------------------
+                # Title
+                # ----------------------------------------------------------
+
+                title_win = self.window.derwin(len(para['title']),
+                                               self.width + 1, y, x)
+
+                for ind, line in enumerate(para['title']):
+                    title_win.addstr(ind, 0, line, cs.A_BOLD)
+
+                title_win.addstr(0, self.width - len(para['bibcode']),
+                                 para['bibcode'], cs.A_UNDERLINE)
+
+                y += len(para['title'])
+
+                # ----------------------------------------------------------
+                # Author
+                # ----------------------------------------------------------
+
+                self.window.addstr(y, x, para['authors'], cs.A_DIM)
+
+                y += 1
+
+                # ----------------------------------------------------------
+                # Abstract
+                # ----------------------------------------------------------
+
+                abs_win = self.window.derwin(len(para['abstract']), self.width,
+                                             y, x)
+
+                for ind, line in enumerate(para['abstract']):
+                    try:
+                        abs_win.addstr(ind, 0, line)
+                    except cs.error:
+                        pass
+
+                y += len(para['abstract'])
+
+                art_ind += 1
+
+                y += 2
+
+        self.window.refresh()
+
+
 class DetailedView:
 
     type = 'detailed'
@@ -455,8 +557,8 @@ class DetailedView:
         self.max_height, self.max_width = self.window.getmaxyx()
 
         self.height = self.max_height
-        self.query_col_width = int(0.1 * self.max_width)
-        self.width = self.max_width - (2 * (self.query_col_width + 4))
+        self.margin_width = int(0.1 * self.max_width)  # i.e. query_col_width
+        self.width = self.max_width - (2 * (self.margin_width + 4))
 
         self.abs_width = self.width - 5
 
@@ -464,7 +566,7 @@ class DetailedView:
 
     def draw(self):
 
-        x, y = 10, 2
+        x, y = self.margin_width, 2
 
         # ------------------------------------------------------------------
         # Title
@@ -532,19 +634,19 @@ class DetailedView:
         info += self.article.wrap_property('bibcode', self.abs_width,
                                            label=True)
 
-        # # doi
+        # doi
         info += self.article.wrap_property('doi', self.abs_width,
                                            label=True)
 
-        # # bibstem
+        # bibstem
         info += self.article.wrap_property('bibstem', self.abs_width,
                                            label=True)
 
-        # # page
+        # page
         info += self.article.wrap_property('page', self.abs_width,
                                            label=True)
 
-        # # read_count
+        # read_count
         info += self.article.wrap_property('read_count', self.abs_width,
                                            label=True)
 
