@@ -38,12 +38,13 @@ class TitleBar:
         self.draw_titlebar()
 
     def __init__(self, window):
+        from .. import __version__
 
         self.window = window
 
         _, self.width = window.getmaxyx()
 
-        self.version = 'papermate (1.0)'
+        self.version = f'papermate ({__version__})'
 
         self.title = ''
 
