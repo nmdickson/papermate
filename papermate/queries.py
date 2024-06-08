@@ -15,15 +15,6 @@ second_order_operations = (
 )
 
 
-def get_user_libraries():
-    q = ads.base.BaseQuery()
-    base_url = ads.libraries.Library._libraries_url
-
-    response = q.session.get(base_url).json()['libraries']
-
-    return {d['name']: d['id'] for d in response}
-
-
 def _gen_q(**search_terms):
     '''If necessary for some reason, format a "q" query string, for `ads`'''
     import re
