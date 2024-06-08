@@ -177,11 +177,24 @@ class ListView:
 
             logging.info(f'creating view for {query=}')
 
-            content[query] = []
-
             if results.empty:
                 Nline += 2
-                content[query] = None
+
+                if Nline < self.height:
+                    content[query] = None
+
+                else:
+                    self.Narticles.append(sum([len(arts) if arts else 0
+                                               for arts in content.values()]))
+
+                    self._pages.append(content)
+
+                    content = {query: None}
+                    # Nline = 2 + para['Nlines'] + 2
+
+                continue
+
+            content[query] = []
 
             for article in results:
 
@@ -586,6 +599,7 @@ class DetailedView:
         y += len(title) + 1
         x += 5
 
+        # TODO how to handle when way too long and content wont fit screen?
         authors = self.article.wrap_property('authors', self.abs_width)
 
         affils = self.article.wrap_property('affiliations', self.abs_width)
