@@ -167,6 +167,8 @@ class QuerySetResult:
 
 
 class Library(QueryResult):
+    '''Note that this is based on a query and so is *read-only*
+    '''
 
     _fl = [
         'author', 'title', 'year', 'pubdate',

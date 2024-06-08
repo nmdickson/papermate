@@ -150,3 +150,22 @@ class Article:
 
         else:
             raise ValueError(f"Unrecognized source '{source}'")
+
+    def add_to_library(self, *, name='papermate'):
+
+        library_map = get_user_libraries()
+
+        if name not in library_map:
+            library_map |= create_default_library()
+
+        id_ = library_map[name]
+
+        lib = ads.libraries.Library(id_)
+
+        resp = lib.add_documents(self.bibcode)
+
+        if resp == 0:
+            mssg = "Could not add this article to library. May already exist."
+            raise ValueError(mssg)
+
+        return resp

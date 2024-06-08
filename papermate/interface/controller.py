@@ -23,15 +23,17 @@ CURS_SUP, CURS_SDOWN = cs.KEY_SR, cs.KEY_SF
 SELECT = (ord('\n'), ord('\r'), cs.KEY_ENTER)
 
 BACK = (ord('b'), cs.KEY_BACKSPACE)
-DOWNLOAD, ONLINE = ord('d'), ord('o')
+DOWNLOAD, ONLINE, ADD_LIBRARY = ord('d'), ord('o'), ord('l')
 
+# Feel like these should be stored in the views themselves, and a mapping
+# function given in the views
 
 COMMANDS = {
     'list': {
         DATE_UP, DATE_DOWN, CURS_UP, CURS_DOWN, CURS_SUP, CURS_SDOWN, *SELECT
     },
     'detailed': {
-        DOWNLOAD, ONLINE, *BACK
+        DOWNLOAD, ONLINE, ADD_LIBRARY, *BACK
     },
     'library': {
         LIB_UP, LIB_DOWN, CURS_UP, CURS_DOWN, CURS_SUP, CURS_SDOWN, *SELECT
@@ -284,7 +286,7 @@ def daily_controller(screen):
                 titlebar.title = f'Article Details'
 
                 cmdbar.commands = {'d': 'Download', 'o': 'View online',
-                                   'b': 'return'}
+                                   'l': 'Add to library', 'b': 'return'}
                 cmdbar.status = ''
 
                 view = DetailedView(content_window, current_article,
@@ -389,6 +391,18 @@ def daily_controller(screen):
                 cmdbar.status = 'Opening in browser...'
                 current_article.open_online()
                 cmdbar.status = ''
+
+            elif cmd == ADD_LIBRARY:
+
+                logging.info('Adding to default library')
+
+                cmdbar.status = 'Adding to library...'
+
+                try:
+                    current_article.add_to_library()
+                    cmdbar.status = ''
+                except ValueError as err:
+                    cmdbar.status = str(err)
 
         # ------------------------------------------------------------------
         # Resize terminal
