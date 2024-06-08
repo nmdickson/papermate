@@ -54,8 +54,12 @@ class Article:
 
     @property
     def affiliations(self):
-        return '; '.join([f'({i}) {aff}' for i, aff in
-                          enumerate(self._affiliations)])
+        if all([aff == '-' for aff in self._affiliations]):
+            out = "No affiliations found"
+        else:
+            out = '; '.join([f'({i}) {aff}' for i, aff in
+                             enumerate(self._affiliations)])
+        return out
 
     @property
     def doi(self):
