@@ -5,7 +5,7 @@ import curses as cs
 
 from .interface import TitleBar, CommandBar
 from .interface import ListView, LibraryView, DetailedView
-from .interface import NoConfigView, BaseView, draw_popup
+from .interface import IntroView, NoConfigView, BaseView, draw_popup
 from ..queries import QuerySet, Library
 from ..utils import get_user_libraries, create_default_library
 from ..utils import prev, BidirectionalCycler, Cache, DateCache
@@ -211,6 +211,8 @@ def daily_controller(screen):
     titlebar, content_window, cmdbar = initialize_screen(screen)
 
     logging.info('Screen initialized')
+
+    view = IntroView(content_window)
 
     # ----------------------------------------------------------------------
     # Gather initial article list, draw initial list view

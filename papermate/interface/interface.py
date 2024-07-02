@@ -139,6 +139,36 @@ class CommandBar:
         self._status_win.refresh()
 
 
+class IntroView:
+
+    type = 'intro'
+
+    def __init__(self, window, title='papermate'):
+        import art
+
+        self.window = window
+
+        self.window.clear()
+
+        self.mssg = art.text2art(title, 'big').split('\n')
+
+        self.max_height, self.max_width = self.window.getmaxyx()
+
+        self.draw()
+
+    def draw(self):
+
+        height, width = len(self.mssg) + 4, len(self.mssg[0]) + 4
+
+        x0 = (self.max_width // 2) - (width // 2)
+        y0 = (self.max_height // 2) - (height // 2)
+
+        for y, line in enumerate(self.mssg, y0):
+            self.window.addstr(y, x0, line, cs.A_BOLD)
+
+        self.window.refresh()
+
+
 class ListView:
 
     type = 'list'
