@@ -1,6 +1,9 @@
-import curses as cs
-import textwrap as tw
 import datetime
+import curses as cs
+import time
+import enum
+import textwrap as tw
+from curses import panel
 
 import logging
 
@@ -444,6 +447,23 @@ class ListView:
         if redraw:
             self.draw()
 
+    def loading_dialog(self, thread):
+
+        pop_win = draw_popup(self.window, "   Loading articles     ")
+        self.window.refresh()
+
+        _i = 0
+        while thread.is_alive():
+            time.sleep(0.25)
+            logging.info(f'thread is alive, at {_i=}')
+            pop_win.erase()
+            mssg = f"   Loading articles{'.' * _i:<5}"
+            pop_win = draw_popup(pop_win, mssg, new_win=False)
+            _i = (_i + 1) % 4
+
+            self.window.untouchwin()
+            pop_win.refresh()
+
 
 class LibraryView(ListView):
 
@@ -815,3 +835,35 @@ class NoConfigView(ErrorView):
     def __init__(self, window, config_file):
         self.config_file = config_file
         super().__init__(window=window)
+
+
+def draw_popup(window, mssg, max_width=None, *, new_win=True):
+
+    win_height, win_width = window.getmaxyx()
+
+    if max_width is not None:
+        mssg = tw.wrap(mssg, max_width)
+    else:
+        mssg = [mssg]
+
+    height = len(mssg) + 4
+    width = len(mssg[0]) + 4
+
+    x0, y0 = (win_width // 2) - (width // 2), (win_height // 2) - (height // 2)
+
+    if new_win is True:
+        pop_win = window.derwin(height, width, y0, x0)
+        pop_win.clear()
+
+    else:
+        pop_win = window
+
+    pop_win.border()
+
+    for y, line in enumerate(mssg, 2):
+        pop_win.addstr(y, 2, line, cs.A_BOLD)
+
+    # pop_win.refresh()
+    # window.refresh()
+
+    return pop_win

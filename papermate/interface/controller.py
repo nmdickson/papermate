@@ -1,10 +1,11 @@
 import logging
 import datetime
+import threading
 import curses as cs
 
 from .interface import TitleBar, CommandBar
 from .interface import ListView, LibraryView, DetailedView
-from .interface import NoConfigView, BaseView
+from .interface import NoConfigView, BaseView, draw_popup
 from ..queries import QuerySet, Library
 from ..utils import get_user_libraries, create_default_library
 from ..utils import prev, BidirectionalCycler, Cache, DateCache
@@ -335,7 +336,21 @@ def daily_controller(screen):
                     search_results = cache[date]
 
                 else:
-                    search_results = queries.execute(date)
+
+                    logging.info('executing this query')
+                    logging.info('starting the thread')
+
+                    th = threading.Thread(target=queries.execute,
+                                          args=[date], daemon=True)
+
+                    th.start()
+                    logging.info('thread is running')
+
+                    view.loading_dialog(th)
+
+                    logging.info('thread is dead')
+
+                    search_results = queries.results
                     cache.cache_results(date, search_results)
 
                 titlebar.title = f'Daily arXiv feed'

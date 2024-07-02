@@ -147,7 +147,10 @@ class QuerySet:
         self.queries = queries
 
     def execute(self, date=None):
-        return QuerySetResult([q.execute(date=date) for q in self.queries])
+        self.results = QuerySetResult(
+            [q.execute(date=date) for q in self.queries]
+        )
+        return self.results
 
 
 class QuerySetResult:
