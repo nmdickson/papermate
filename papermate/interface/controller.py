@@ -302,8 +302,14 @@ def daily_controller(screen):
 
                 # Check that this date isn't in the future
                 if date.date() > datetime.datetime.today().date():
+                    logging.info("Can't move into the future, revert to today")
                     date -= datetime.timedelta(days=td)
                     continue
+
+                # Check that this isn't a weekend we want to skip
+                if CONFIG.skip_weekends and date.weekday() >= 5:
+                    logging.info('Skipping over the weekend')
+                    date += datetime.timedelta(days=2 * td)
 
                 cmdbar.status = 'Loading articles...'
 
