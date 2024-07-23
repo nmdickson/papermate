@@ -5,9 +5,9 @@ import curses as cs
 
 from .interface import TitleBar, CommandBar
 from .interface import ListView, LibraryView, DetailedView
-from .interface import IntroView, NoConfigView, BaseView, draw_popup
+from .interface import IntroView, NoConfigView, BaseView
 from ..queries import QuerySet, Library
-from ..utils import get_user_libraries, create_default_library
+from ..utils import CONFIG, get_user_libraries, create_default_library
 from ..utils import prev, BidirectionalCycler, Cache, DateCache
 
 
@@ -47,31 +47,6 @@ EXIT_CMDS = {
 
 
 DEFAULT_LIBRARY = 'papermate'
-
-
-def get_config_file():
-    import os
-    import pathlib
-
-    datadir = f"{pathlib.Path.home()}/.config"
-
-    fn = f"{datadir}/papermate.toml"
-
-    try:
-        # If file does not exist, create it (x mode fails if exists)
-        file = open(fn, 'x')
-        os.chmod(fn, 0o640)
-
-    except FileExistsError:
-        file = open(fn)
-
-    except FileNotFoundError:
-        raise FileNotFoundError(f"Could not find/open file at {fn}")
-
-    finally:
-        file.close()
-
-    return fn
 
 
 def initialize_screen(screen):
@@ -222,11 +197,10 @@ def daily_controller(screen):
 
     cmdbar.status = 'Loading articles...'
 
-    config_file = get_config_file()
-    queries = QuerySet.from_configfile(config_file)
+    queries = QuerySet.from_configfile(CONFIG)
 
     if len(queries) == 0:
-        return flash_error(screen, NoConfigView, content_window, config_file,
+        return flash_error(screen, NoConfigView, content_window, CONFIG,
                            titlebar=titlebar, cmdbar=cmdbar)
 
     search_results = queries.execute(date)
@@ -340,17 +314,22 @@ def daily_controller(screen):
                 else:
 
                     logging.info('executing this query')
-                    logging.info('starting the thread')
 
-                    th = threading.Thread(target=queries.execute,
-                                          args=[date], daemon=True)
+                    if CONFIG.show_loading:
+                        logging.info('starting the thread')
 
-                    th.start()
-                    logging.info('thread is running')
+                        th = threading.Thread(target=queries.execute,
+                                              args=[date], daemon=True)
 
-                    view.loading_dialog(th)
+                        th.start()
+                        logging.info('thread is running')
 
-                    logging.info('thread is dead')
+                        view.loading_dialog(th)
+
+                        logging.info('thread is dead')
+
+                    else:
+                        queries.execute(date)
 
                     search_results = queries.results
                     cache.cache_results(date, search_results)

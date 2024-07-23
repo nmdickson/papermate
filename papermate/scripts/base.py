@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 import papermate
-import curses as cs
+from papermate.utils import CONFIG
 
 import logging
+import curses as cs
 
-logging.basicConfig(filename='pmate.log', filemode='w', level=logging.DEBUG)
+
+logging.basicConfig(filename=CONFIG.log_file, filemode='w', level=logging.DEBUG)
 
 
 def main():

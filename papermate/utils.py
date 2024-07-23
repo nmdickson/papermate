@@ -1,13 +1,84 @@
-import ads
-import ads.libraries
-
+import os
+import pathlib
 import datetime
 from collections import UserDict
 
+try:
+    import tomllib as toml
+except ImportError:
+    import tomli as toml
 
-__all__ = ['prev', 'BidirectionalCycler',
+
+__all__ = ['CONFIG', 'prev', 'BidirectionalCycler',
            'get_user_libraries', 'create_default_library',
            'Cache', 'DateCache']
+
+
+# --------------------------------------------------------------------------
+# Application settings
+# --------------------------------------------------------------------------
+
+
+DEFAULT_CONFIG_PATH = pathlib.Path.home() / ".config/papermate.toml"
+
+SETTINGS_DEFAULTS = {
+    "skip_weekends": True,
+    "default_library": "papermate",
+    "download_location": pathlib.Path.home() / "Downloads",
+    "log_file": pathlib.Path.home() / ".local/share/pmate.log",
+    "show_relative_date": True,
+    "show_loading": True,
+    "ads_api_key": None
+}
+
+
+def touch_config(fn):
+    try:
+        # If file does not exist, create it (x mode fails if exists)
+        file = open(fn, 'x')
+        os.chmod(fn, 0o640)
+
+    except FileExistsError:
+        file = open(fn)
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Could not find/open file at {fn}")
+
+    file.close()
+
+    return fn
+
+
+class _Config:
+
+    def __getattr__(self, key):
+        try:
+            return self.settings[key]
+        except KeyError:
+            raise AttributeError(f"'{self}' object has no attribute '{key}'")
+
+    def __init__(self, config_path=DEFAULT_CONFIG_PATH):
+
+        config_path = touch_config(config_path)
+
+        with open(config_path, 'rb') as oconf:
+            try:
+                self.queries = toml.load(oconf)
+            except toml.TOMLDecodeError as err:
+                raise toml.TOMLDecodeError("Invalid config file") from err
+
+        self.settings = SETTINGS_DEFAULTS | self.queries.pop('Config', {})
+
+        if (api_key := self.settings.get('ads_api_key')) is not None:
+            os.environ['ADS_API_TOKEN'] = api_key
+
+
+CONFIG = _Config()
+
+
+# --------------------------------------------------------------------------
+# Iteration helpers
+# --------------------------------------------------------------------------
 
 
 def prev(iterable):
@@ -46,7 +117,14 @@ class BidirectionalCycler:
         self._ind, self.N = 0, len(self._saved) - 1
 
 
+# --------------------------------------------------------------------------
+# Library helpers
+# --------------------------------------------------------------------------
+
+
 def get_user_libraries():
+    import ads
+
     q = ads.base.BaseQuery()
     base_url = ads.libraries.Library._libraries_url
 
@@ -55,15 +133,23 @@ def get_user_libraries():
     return {d['name']: d['id'] for d in response}
 
 
-def create_default_library(*, name="papermate", desc="papermate library"):
+def create_default_library(*, name=CONFIG.default_library,
+                           desc="papermate library"):
+    from ads import libraries
+
     try:
-        lib = ads.libraries.Library.new(name=name, description=desc,
-                                        public=False, docs=[])
+        lib = libraries.Library.new(name=name, description=desc,
+                                    public=False, docs=[])
     except KeyError as err:
         mssg = f"Default library {name} already exists"
         raise ValueError(mssg) from err
 
     return {name: lib.id}
+
+
+# --------------------------------------------------------------------------
+# Caching
+# --------------------------------------------------------------------------
 
 
 class Cache(UserDict):

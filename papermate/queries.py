@@ -5,6 +5,7 @@ import datetime
 import itertools
 
 from .articles import Article
+from .utils import _Config
 
 
 __all__ = ['Query', 'QuerySet', 'Library']
@@ -131,16 +132,9 @@ class QuerySet:
         return len(self.queries)
 
     @classmethod
-    def from_configfile(cls, config):
-        try:
-            import tomllib as toml
-        except ImportError:
-            import tomli as toml
-
-        with open(config, 'rb') as oconf:
-            cfg = toml.load(oconf)
-
-        return cls([Query(name=name, **sec) for name, sec in cfg.items()])
+    def from_configfile(cls, config: _Config):
+        return cls([Query(name=name, **sec)
+                    for name, sec in config.queries.items()])
 
     def __init__(self, queries):
 

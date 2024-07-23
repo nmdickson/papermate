@@ -1,12 +1,9 @@
 import ads
 import logging
-import pathlib
 import textwrap as tw
 
-from .utils import get_user_libraries, create_default_library
+from .utils import CONFIG, get_user_libraries, create_default_library
 
-
-DEFAULT_DW_DEST = pathlib.Path('~/Downloads').expanduser()
 
 ADS_URL = "ui.adsabs.harvard.edu"
 
@@ -135,7 +132,7 @@ class Article:
 
             return wrap_prop
 
-    def download(self, dest=DEFAULT_DW_DEST):
+    def download(self, dest=CONFIG.download_location):
         import requests
 
         pdf_data = requests.get(self.pdf_url)

@@ -7,6 +7,8 @@ from curses import panel
 
 import logging
 
+from ..utils import CONFIG
+
 
 def humanize_date(date, relative=True):
 
@@ -184,7 +186,7 @@ class ListView:
 
         self.window.clear()
 
-        self.date_title = humanize_date(date)
+        self.date_title = humanize_date(date, CONFIG.show_relative_date)
 
         self.max_height, self.max_width = self.window.getmaxyx()
 
