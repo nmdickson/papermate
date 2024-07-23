@@ -9,7 +9,8 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = {file = "LICENSE"}
 dependencies = [
-    "ads>=0.12.4"
+    "ads>=0.12.4",
+    'tomli; python_version < "3.11"'
 ]
 
 classifiers = [
