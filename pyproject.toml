@@ -10,7 +10,9 @@ requires-python = ">=3.9"
 license = {file = "LICENSE"}
 dependencies = [
     "ads>=0.12.4",
-    'tomli; python_version < "3.11"'
+    'tomli; python_version < "3.11"',
+    "art",
+    "python-crontab"
 ]
 
 classifiers = [
@@ -33,6 +35,7 @@ repository = "https://github.com/nmdickson/papermate.git"
 papermate = "papermate.scripts:base.main"
 papermate-daily = "papermate.scripts:base.daily"
 papermate-library = "papermate.scripts:base.library"
+papermate-remind = "papermate.scripts:notify.broadcast_reminder"
 
 [build-system]
 requires = ["hatchling"]

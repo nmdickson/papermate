@@ -1,5 +1,7 @@
 import os
+import shutil
 import pathlib
+import logging
 import datetime
 from collections import UserDict
 
@@ -15,6 +17,46 @@ __all__ = ['CONFIG', 'prev', 'BidirectionalCycler',
 
 
 # --------------------------------------------------------------------------
+# Setup reminder cronjobs
+# --------------------------------------------------------------------------
+
+
+def setup_cronjob(days, hours, cron=None, overwrite=False):
+    import crontab
+
+    cron = crontab.CronTab(user=True) if cron is None else cron
+
+    if list(cron.find_command('papermate-remind')):
+        if overwrite:
+            remove_cronjob(cron=cron, strict=False)
+        else:
+            mssg = "cronjob (command=papermate-remind) already exists."
+            raise RuntimeError(mssg)
+
+    job = cron.new(command=shutil.which('papermate-remind'))
+
+    job.dow.on(*days)
+    job.hour.on(*hours)
+    job.minute.on(0)
+
+    cron.write()
+
+
+def remove_cronjob(cron=None, *, strict=False):
+    import crontab
+
+    logging.info('Removing current cronjobs')
+
+    cron = crontab.CronTab(user=True) if cron is None else cron
+
+    Nrem = cron.remove_all(command='papermate-remind')
+
+    if strict and Nrem == 0:
+        raise RuntimeError("No cronjob (command=papermate-remind) exists.")
+
+    cron.write()
+
+# --------------------------------------------------------------------------
 # Application settings
 # --------------------------------------------------------------------------
 
@@ -28,7 +70,9 @@ SETTINGS_DEFAULTS = {
     "log_file": pathlib.Path.home() / ".local/share/pmate.log",
     "show_relative_date": True,
     "show_loading": True,
-    "ads_api_key": None
+    "ads_api_key": None,
+    "reminder": False,
+    "reminder_times": [["Mon", "Tue", "Wed", "Thu", "Fri"], [9]]
 }
 
 
@@ -69,12 +113,31 @@ class _Config:
 
         self.settings = SETTINGS_DEFAULTS | self.queries.pop('Config', {})
 
+        logging.basicConfig(filename=self.settings['log_file'], filemode='w',
+                            level=logging.DEBUG)
+
         if (api_key := self.settings.get('ads_api_key')) is not None:
             os.environ['ADS_API_TOKEN'] = api_key
 
+        if self.settings.get('reminder', False) is not False:
+
+            cron_times = self.settings.get('reminder_times')
+
+            logging.info(f'setting up cronjob with {cron_times=}')
+
+            if len(cron_times) != 2:
+                mssg = ("Invalid config field 'reminder', must be False or "
+                        "2-array of (0) days of week and (1) hours of day.")
+                raise RuntimeError(mssg)
+
+            setup_cronjob(*cron_times, overwrite=True)
+
+        else:
+            # If reminder = false, clear any old cronjobs
+            remove_cronjob()
+
 
 CONFIG = _Config()
-
 
 # --------------------------------------------------------------------------
 # Iteration helpers
