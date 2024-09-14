@@ -735,6 +735,26 @@ class DetailedView:
 
         self.window.refresh()
 
+    def loading_dialog(self, thread, message):
+
+        pop_win = draw_popup(self.window, f"   {message}     ")
+        self.window.refresh()
+
+        _i = 0
+        while thread.is_alive():
+            time.sleep(0.25)
+            logging.info(f'thread is alive, at {_i=}')
+            pop_win.erase()
+            mssg = f"   {message}{'.' * _i:<5}"
+            pop_win = draw_popup(pop_win, mssg, new_win=False)
+            _i = (_i + 1) % 4
+
+            self.window.untouchwin()
+            pop_win.refresh()
+
+        pop_win.erase()
+        self.window.refresh()
+
 
 class BaseView:
 

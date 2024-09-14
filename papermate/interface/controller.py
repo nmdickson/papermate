@@ -382,7 +382,23 @@ def daily_controller(screen):
                 logging.info('Downloading file')
 
                 cmdbar.status = 'Downloading file...'
-                current_article.download()
+
+                if CONFIG.show_loading:
+                    logging.info('starting the thread')
+
+                    th = threading.Thread(target=current_article.download,
+                                          daemon=True)
+
+                    th.start()
+                    logging.info('thread is running')
+
+                    view.loading_dialog(th, message='Downloading file')
+
+                    logging.info('thread is dead')
+
+                else:
+                    current_article.download()
+
                 cmdbar.status = ''
 
             elif cmd == ONLINE:
@@ -401,8 +417,27 @@ def daily_controller(screen):
                 cmdbar.status = 'Adding to library...'
 
                 try:
-                    current_article.add_to_library()
+
+                    if CONFIG.show_loading:
+                        logging.info('starting the thread')
+
+                        th = threading.Thread(
+                            target=current_article.add_to_library,
+                            daemon=True
+                        )
+
+                        th.start()
+                        logging.info('thread is running')
+
+                        view.loading_dialog(th, message='Adding to library')
+
+                        logging.info('thread is dead')
+
+                    else:
+                        current_article.add_to_library()
+
                     cmdbar.status = ''
+
                 except ValueError as err:
                     cmdbar.status = str(err)
 
