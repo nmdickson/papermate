@@ -33,6 +33,41 @@ def _gen_q(**search_terms):
     return q
 
 
+class _Searcher(ads.SearchQuery):
+
+    _session_response = None
+
+    def execute(self):
+        """
+        Overwrite SearchQuery.execute just to save the response object even if
+        there is an error (for better error messages)
+        """
+        import warnings
+
+        # Only difference from SearchQuery.execute:
+        resp = self.session.get(self.HTTP_ENDPOINT, params=self.query)
+        try:
+            self.response = ads.search.SolrResponse.load_http_response(resp)
+        except ads.exceptions.APIResponseError as err:
+            err.response = resp
+            raise err
+
+        header = self.response.responseHeader
+        recv_rows = int(header.get("params", {}).get("rows"))
+        if recv_rows != self.query.get("rows"):
+            self._query['rows'] = recv_rows
+            warnings.warn("Response rows did not match input rows. "
+                          f"Setting this query's rows to {self.query['rows']}")
+
+        self._articles.extend(self.response.articles)
+        if self._query.get('start') is not None:
+            self._query['start'] += self._query['rows']
+        elif self._query.get('cursorMark') is not None:
+            self._query['cursorMark'] = self.response.json.get("nextCursorMark")
+
+        self._highlights.update(self.response.json.get("highlighting", {}))
+
+
 class Query:
     '''all the things that go into making an ADS query
 
@@ -99,8 +134,7 @@ class Query:
 
         entdate = f'{date:%Y-%m-%d}z00:00'
 
-        result = ads.SearchQuery(entdate=entdate, fl=self._fl,
-                                 **self._query_dict)
+        result = _Searcher(entdate=entdate, fl=self._fl, **self._query_dict)
 
         result.execute()
 

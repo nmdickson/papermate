@@ -5,10 +5,12 @@ import curses as cs
 
 from .interface import TitleBar, CommandBar
 from .interface import ListView, LibraryView, DetailedView
-from .interface import IntroView, NoConfigView, BaseView
+from .interface import IntroView, NoConfigView, BaseView, ResponseErrorView
 from ..queries import QuerySet, Library
 from ..utils import CONFIG, get_user_libraries, create_default_library
 from ..utils import prev, BidirectionalCycler, Cache, DateCache
+
+from ads.exceptions import APIResponseError
 
 
 __all__ = ["controller"]
@@ -203,7 +205,11 @@ def daily_controller(screen):
         return flash_error(screen, NoConfigView, content_window, CONFIG,
                            titlebar=titlebar, cmdbar=cmdbar)
 
-    search_results = queries.execute(date)
+    try:
+        search_results = queries.execute(date)
+    except APIResponseError as err:
+        return flash_error(screen, ResponseErrorView, content_window,
+                           err.response, titlebar=titlebar, cmdbar=cmdbar)
 
     cache = DateCache({date: search_results})
 
@@ -321,21 +327,28 @@ def daily_controller(screen):
 
                     logging.info('executing this query')
 
-                    if CONFIG.show_loading:
-                        logging.info('starting the thread')
+                    try:
 
-                        th = threading.Thread(target=queries.execute,
-                                              args=[date], daemon=True)
+                        if CONFIG.show_loading:
+                            logging.info('starting the thread')
 
-                        th.start()
-                        logging.info('thread is running')
+                            th = threading.Thread(target=queries.execute,
+                                                  args=[date], daemon=True)
 
-                        view.loading_dialog(th)
+                            th.start()
+                            logging.info('thread is running')
 
-                        logging.info('thread is dead')
+                            view.loading_dialog(th)
 
-                    else:
-                        queries.execute(date)
+                            logging.info('thread is dead')
+
+                        else:
+                            queries.execute(date)
+
+                    except APIResponseError as err:
+                        return flash_error(screen, ResponseErrorView,
+                                           content_window, err.response,
+                                           titlebar=titlebar, cmdbar=cmdbar)
 
                     search_results = queries.results
                     cache.cache_results(date, search_results)

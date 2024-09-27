@@ -168,6 +168,8 @@ class IntroView:
         for y, line in enumerate(self.mssg, y0):
             self.window.addstr(y, x0, line, cs.A_BOLD)
 
+        # TODO also have a threaded "loading" prompt on this page
+
         self.window.refresh()
 
 
@@ -886,6 +888,40 @@ class NoConfigView(ErrorView):
 
     def __init__(self, window, config_file):
         self.config_file = config_file
+        super().__init__(window=window)
+
+
+class ResponseErrorView(ErrorView):
+
+    _default_tip = "turning it off and on again?"
+
+    _tip_library = {
+        404: 'complaining to Nolan that he somehow messed up the query url?',
+        418: 'not brewing coffee in a teapot?',
+        429: ('checking your ADS API rate limit?\n'
+              'See ads.readthedocs.io/en/latest/index.html#rate-limit-usage.'),
+        500: _default_tip,
+        502: _default_tip,
+        503: 'checking if "adsabs.harvard.edu" is live?'
+    }
+
+    @property
+    def title(self):
+        return "ADS API Response Error"
+
+    @property
+    def message(self):
+        mssg = (f'Received response \n "[{self.code}] {self.resp_mssg}"\n---\n'
+                f'Have you tried {self.tip}')
+        return mssg
+
+    def __init__(self, window, response):
+
+        self.code = response.status_code
+        self.resp_mssg = response.reason
+
+        self.tip = self._tip_library.get(self.code, self._default_tip)
+
         super().__init__(window=window)
 
 
