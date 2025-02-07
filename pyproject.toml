@@ -1,6 +1,6 @@
 [project]
 name = "papermate"
-version = "1.1.0"
+version = "1.1.1"
 description = "Daily ADS feed of arXiv papers"
 authors = [
     {name = "Nolan Dickson", email = "ndickson@protonmail.com"},
@@ -12,7 +12,8 @@ dependencies = [
     "ads>=0.12.4",
     'tomli; python_version < "3.11"',
     "art",
-    "python-crontab"
+    "python-crontab",
+    "pyperclip"
 ]
 
 classifiers = [

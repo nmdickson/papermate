@@ -170,3 +170,7 @@ class Article:
             raise ValueError(mssg)
 
         return resp
+
+    def copy_bibcode(self):
+        import pyperclip
+        pyperclip.copy(self.bibcode)

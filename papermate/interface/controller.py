@@ -26,7 +26,7 @@ CURS_SUP, CURS_SDOWN = cs.KEY_SR, cs.KEY_SF
 SELECT = (ord('\n'), ord('\r'), cs.KEY_ENTER)
 
 BACK = (ord('b'), cs.KEY_BACKSPACE)
-DOWNLOAD, ONLINE, ADD_LIBRARY = ord('d'), ord('o'), ord('l')
+COPY, DOWNLOAD, ONLINE, ADD_LIBRARY = ord('c'), ord('d'), ord('o'), ord('l')
 
 # Feel like these should be stored in the views themselves, and a mapping
 # function given in the views
@@ -36,7 +36,7 @@ COMMANDS = {
         DATE_UP, DATE_DOWN, CURS_UP, CURS_DOWN, CURS_SUP, CURS_SDOWN, *SELECT
     },
     'detailed': {
-        DOWNLOAD, ONLINE, ADD_LIBRARY, *BACK
+        COPY, DOWNLOAD, ONLINE, ADD_LIBRARY, *BACK
     },
     'library': {
         LIB_UP, LIB_DOWN, CURS_UP, CURS_DOWN, CURS_SUP, CURS_SDOWN, *SELECT
@@ -411,6 +411,16 @@ def daily_controller(screen):
 
                 else:
                     current_article.download()
+
+                cmdbar.status = ''
+
+            elif cmd == COPY:
+
+                logging.info('Copying bibcode to clipboard')
+
+                cmdbar.status = 'Copying bibcode...'
+
+                current_article.copy_bibcode()
 
                 cmdbar.status = ''
 
