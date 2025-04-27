@@ -100,6 +100,15 @@ def controller(screen, mode=None):
 
     screen.clear()
 
+    # Set the background and foreground colours
+    # TODO would be better to detect current terminal colours
+    if CONFIG.invert_colours:
+        try:
+            cs.init_pair(1, cs.COLOR_BLACK, cs.COLOR_WHITE)
+            screen.bkgd(' ', cs.color_pair(1))
+        except cs.error as err:
+            logging.warning(f'Could not set bkgd colour: {err}')
+
     if mode is None:
         # bring up an options screen with each of these options available
         base_controller(screen)

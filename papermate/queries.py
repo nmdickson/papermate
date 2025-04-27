@@ -1,6 +1,7 @@
 import ads
 import ads.libraries
 
+import logging
 import datetime
 import itertools
 
@@ -46,6 +47,9 @@ class _Searcher(ads.SearchQuery):
 
         # Only difference from SearchQuery.execute:
         resp = self.session.get(self.HTTP_ENDPOINT, params=self.query)
+        # TODO this still fails grossly if receiving 503? fails on resp.json()
+        logging.warning(resp.text)
+        logging.warning(resp.json())
         try:
             self.response = ads.search.SolrResponse.load_http_response(resp)
         except ads.exceptions.APIResponseError as err:

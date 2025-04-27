@@ -72,7 +72,8 @@ SETTINGS_DEFAULTS = {
     "show_loading": True,
     "ads_api_key": None,
     "reminder": False,
-    "reminder_times": [["Mon", "Tue", "Wed", "Thu", "Fri"], [9]]
+    "reminder_times": [["Mon", "Tue", "Wed", "Thu", "Fri"], [9]],
+    "invert_colours": False
 }
 
 
