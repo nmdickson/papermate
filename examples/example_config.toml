@@ -1,0 +1,36 @@
+[Config]
+default_library = "papermate"
+download_location = "/home/dev/Research/papers/papermate"
+log_file = "/home/dev/Research/papers/papermate/pmate.log"
+show_relative_date = true
+show_loading = true
+skip_weekends = true
+reminder = true
+reminder_times = [["Mon", "Tue", "Wed", "Thu", "Fri"], [11]]
+invert_colours = false
+# ads_api_key = ""
+
+["Globular Clusters"]
+full = "Globular Cluster"
+
+["Black Holes"]
+full = "Black Holes"
+-full = "AGN"
+
+["IMF"]
+full = "Initial Mass Function"
+
+["Streams"]
+full = "Stellar Stream"
+
+["Nested Sampling"]
+full = "Nested Sampling"
+
+["Omega Cen"]
+object = "NGC5139"
+
+["Citing me".citations]
+orcid = "0000-0002-6865-2369"
+
+["Using limepy".citations]
+bibcode = "2015MNRAS.454..576G"
