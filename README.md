@@ -64,12 +64,12 @@ Defaults:
 [Config]
 skip_weekends = true
 default_library = "papermate"
-download_location = "/home/user/Research/papers/papermate"
-log_file = "/home/user/Research/papers/papermate/pmate.log"
+download_location = "/home/user/Downloads"
+log_file = "/home/user/.local/share/pmate.log"
 show_relative_date = true
 show_loading = true
 ads_api_key = ""
-reminder = true
+reminder = false
 reminder_times = [["Mon", "Tue", "Wed", "Thu", "Fri"], [11]]
 invert_colours = false
 ```
@@ -123,8 +123,9 @@ ORCID), and "object" (searches for a given astronomical object.)
 
 Example:
 ```TOML
-["GCs"]
+["Clusters"]
 full = "Globular Cluster"
+full = "Open Cluster"
 
 ["Black Holes"]
 full = "Black Holes"
@@ -215,3 +216,7 @@ it's very polished, and it may not meet anyone elses needs.
     nothing that can be done about it, except coming back the next day. It seems
     to happen most on Thursdays.
     (I just take it as a vacation-from-reading day).
+
+- Allow non "astro-ph" arXiv classes.
+    Should be as simple as allowing "arxiv_class" to be a search term. Might
+    already work.
