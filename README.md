@@ -67,6 +67,7 @@ default_library = "papermate"
 download_location = "/home/user/Downloads"
 log_file = "/home/user/.local/share/pmate.log"
 show_relative_date = true
+mark_read = true
 show_loading = true
 ads_api_key = ""
 reminder = false
@@ -87,6 +88,10 @@ download option.
 
 **show_relative_date**: Show at the top of the screen the date relative to today
 (e.g. "yesterday", "2 days ago", etc.)
+
+**mark_read**: Show at the top of the screen a marker noting if all articles on
+a given date have been seen. This will persist across sessions by storing the
+seen dates within the "download_location" folder.
 
 **show_loading**: Show a popup loading notice when fetching new articles.
 

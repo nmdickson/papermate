@@ -7,7 +7,7 @@ from curses import panel
 
 import logging
 
-from ..utils import CONFIG
+from ..utils import CONFIG, READMARKERS
 
 
 def humanize_date(date, relative=True):
@@ -27,6 +27,9 @@ def humanize_date(date, relative=True):
 
         else:
             out += f" ({diff} days {suffix})"
+
+    if CONFIG.mark_read:
+        out += f' [{"R" if date in READMARKERS else " "}]'
 
     return out
 
@@ -188,6 +191,7 @@ class ListView:
 
         self.window.clear()
 
+        self.date = date
         self.date_title = humanize_date(date, CONFIG.show_relative_date)
 
         self.max_height, self.max_width = self.window.getmaxyx()
@@ -472,11 +476,14 @@ class ListView:
             if self.curs_ind >= self.Narticles[self.page]:
 
                 try:
+                    # Scroll view to next page
                     self.scroll('down', strict=True, redraw=False)
                     self.curs_ind = 0
 
                 except RuntimeError:
+                    # Reach last entry of day
                     self.curs_ind = self.Narticles[self.page] - 1
+                    READMARKERS.mark(self.date)
 
         if redraw:
             self.draw()

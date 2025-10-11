@@ -13,7 +13,7 @@ except ImportError:
 
 __all__ = ['CONFIG', 'prev', 'BidirectionalCycler',
            'get_user_libraries', 'create_default_library',
-           'Cache', 'DateCache']
+           'Cache', 'DateCache', 'READMARKERS']
 
 
 # --------------------------------------------------------------------------
@@ -70,6 +70,7 @@ SETTINGS_DEFAULTS = {
     "log_file": pathlib.Path.home() / ".local/share/pmate.log",
     "show_relative_date": True,
     "show_loading": True,
+    "mark_read": True,
     "ads_api_key": None,
     "reminder": False,
     "reminder_times": [["Mon", "Tue", "Wed", "Thu", "Fri"], [9]],
@@ -248,3 +249,30 @@ class DateCache(Cache):
 
     def cached_dates(self):
         return [datetime.date.fromisoformat(d.strip("z00:00")) for d in self]
+
+
+class _ReadMarkers:
+
+    def _coerce_date(self, date):
+        return f'{date:%Y-%m-%d}z00:00'
+
+    def __contains__(self, date):
+
+        with open(self.filename, 'r') as of:
+
+            return self._coerce_date(date) in (ln.strip() for ln in of)
+
+    def mark(self, date):
+
+        with open(self.filename, 'a') as of:
+
+            of.write(self._coerce_date(date) + '\n')
+
+    def __init__(self, location=CONFIG.download_location):
+
+        self.filename = pathlib.Path(location) / '.papermate_readmarker.txt'
+
+        self.filename.touch(exist_ok=True)
+
+
+READMARKERS = _ReadMarkers()
