@@ -103,11 +103,18 @@ class _Config:
         except KeyError:
             raise AttributeError(f"'{self}' object has no attribute '{key}'")
 
+    def __str__(self):
+        '''Return flat string representation of settings'''
+        return "\n".join(f"{k} = {v}" for k, v in self.settings.items())
+
+    def __repr__(self):
+        return f"_Config(config_path={self.config_path})"
+
     def __init__(self, config_path=DEFAULT_CONFIG_PATH):
 
-        config_path = touch_config(config_path)
+        self.config_path = touch_config(config_path)
 
-        with open(config_path, 'rb') as oconf:
+        with open(self.config_path, 'rb') as oconf:
             try:
                 self.queries = toml.load(oconf)
             except toml.TOMLDecodeError as err:

@@ -37,6 +37,8 @@ papermate = "papermate.scripts:base.main"
 papermate-daily = "papermate.scripts:base.daily"
 papermate-library = "papermate.scripts:base.library"
 papermate-remind = "papermate.scripts:notify.broadcast_reminder"
+papermate-config = "papermate.scripts:config.main"
+
 
 [build-system]
 requires = ["hatchling"]

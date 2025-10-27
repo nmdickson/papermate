@@ -54,6 +54,9 @@ settings, and the actual queries used to search for relevant papers.
 Some explanations are given below. See also the example config file in this
 repository.
 
+The config file can be can also be read and editted directly in the command line
+through the `papermate-config` command.
+
 
 #### Settings
 
