@@ -47,9 +47,12 @@ everything.
 
 ### Config Files
 
-`papermate` is controlled through a single TOML config file (currently must be
-at `$HOME/.config/papermate.toml`). This file controls both the application
-settings, and the actual queries used to search for relevant papers.
+`papermate` is controlled through a single TOML config file.
+This file controls both the application settings, and the actual queries used
+to search for relevant papers.
+`papermate` will search for this file at `$PAPERMATE_CONFIG_DIR/papermate.toml`
+if `PAPERMATE_CONFIG_DIR` is set, otherwise defaults to
+`$HOME/.config/papermate.toml`.
 
 Some explanations are given below. See also the example config file in this
 repository.

@@ -61,7 +61,10 @@ def remove_cronjob(cron=None, *, strict=False):
 # --------------------------------------------------------------------------
 
 
-DEFAULT_CONFIG_PATH = pathlib.Path.home() / ".config/papermate.toml"
+DEFAULT_CONFIG_PATH = pathlib.Path(
+    os.environ.get('PAPERMATE_CONFIG_DIR', '~/.config')
+).expanduser() / "papermate.toml"
+
 
 SETTINGS_DEFAULTS = {
     "skip_weekends": True,
