@@ -2,6 +2,7 @@ import os
 import shutil
 import pathlib
 import logging
+import warnings
 import datetime
 from collections import UserDict
 
@@ -11,7 +12,7 @@ except ImportError:
     import tomli as toml
 
 
-__all__ = ['CONFIG', 'prev', 'BidirectionalCycler',
+__all__ = ['CONFIG', 'get_token', 'prev', 'BidirectionalCycler',
            'get_user_libraries', 'create_default_library',
            'Cache', 'DateCache', 'READMARKERS']
 
@@ -128,8 +129,9 @@ class _Config:
         logging.basicConfig(filename=self.settings['log_file'], filemode='w',
                             level=logging.DEBUG)
 
-        if (api_key := self.settings.get('ads_api_key')) is not None:
-            os.environ['ADS_API_TOKEN'] = api_key
+        # if (api_key := self.settings.get('ads_api_key')) is not None:
+        #     # store ADS token in ENV so it can be grabbed elsewhere w/ priority
+        #     os.environ['ADS_API_TOKEN'] = api_key
 
         if self.settings.get('reminder', False) is not False:
 
@@ -150,6 +152,32 @@ class _Config:
 
 
 CONFIG = _Config()
+
+
+def get_token():
+    '''adapted from ads to get token outside a query'''
+    from ads.config import TOKEN_FILES, TOKEN_ENVIRON_VARS, token
+
+    if (api_key := CONFIG.settings.get('ads_api_key')) is not None:
+        return api_key
+
+    for env_val in map(os.environ.get, TOKEN_ENVIRON_VARS):
+        if env_val is not None:
+            return env_val
+
+    for fn in TOKEN_FILES:
+        try:
+            with open(fn) as fp:
+                return fp.read().strip()
+
+        except IOError:
+            pass
+
+    # If token stored in ads.config (can't see that being true)
+    if token is not None:
+        return token
+
+    warnings.warn("No token found", RuntimeWarning)
 
 # --------------------------------------------------------------------------
 # Iteration helpers
@@ -249,7 +277,7 @@ class Cache(UserDict):
 class DateCache(Cache):
     '''simple subclass for storing a cache of query results for various dates'''
 
-    def _coerce_id(self, date):
+    def _coerce_id(self, date: datetime.datetime):
         '''coerce a given date to a string'''
         try:
             return f'{date:%Y-%m-%d}z00:00'

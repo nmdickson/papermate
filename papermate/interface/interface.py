@@ -28,6 +28,7 @@ def humanize_date(date, relative=True):
         else:
             out += f" ({diff} days {suffix})"
 
+    # TODO right align this
     if CONFIG.mark_read:
         out += f' [{"R" if date in READMARKERS else " "}]'
 
@@ -148,7 +149,7 @@ class IntroView:
 
     type = 'intro'
 
-    def __init__(self, window, title='papermate'):
+    def __init__(self, window, title='papermate'):#, fancy=CONFIG.fancy_splash):
         import art
 
         self.window = window
@@ -174,6 +175,23 @@ class IntroView:
         # TODO also have a threaded "loading" prompt on this page
 
         self.window.refresh()
+
+    # def loading_dialog(self, thread):
+
+    #     pop_win = draw_popup(self.window, "   Loading articles     ")
+    #     self.window.refresh()
+
+    #     _i = 0
+    #     while thread.is_alive():
+    #         time.sleep(0.25)
+    #         logging.info(f'thread is alive, at {_i=}')
+    #         pop_win.erase()
+    #         mssg = f"   Loading articles{'.' * _i:<5}"
+    #         pop_win = draw_popup(pop_win, mssg, new_win=False)
+    #         _i = (_i + 1) % 4
+
+    #         self.window.untouchwin()
+    #         pop_win.refresh()
 
 
 class ListView:
@@ -930,6 +948,12 @@ class ResponseErrorView(ErrorView):
         self.tip = self._tip_library.get(self.code, self._default_tip)
 
         super().__init__(window=window)
+
+
+class ResizeWarningView(ErrorView):
+    # a view that just says please resize, and doesnt kill everything but
+    #   restarts the loop once screen is resized
+    pass
 
 
 def draw_popup(window, mssg, max_width=None, *, new_win=True):

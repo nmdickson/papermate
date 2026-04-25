@@ -1,12 +1,12 @@
 import ads
 import ads.libraries
+import aiohttp
 
-import logging
 import datetime
 import itertools
 
 from .articles import Article
-from .utils import _Config
+from .utils import _Config, get_token
 
 
 __all__ = ['Query', 'QuerySet', 'Library']
@@ -15,6 +15,18 @@ __all__ = ['Query', 'QuerySet', 'Library']
 second_order_operations = (
     "similar", "reviews", "trending", "useful", "citations"
 )
+
+
+_HEADERS = {
+    "Authorization": f"Bearer {get_token()}",
+    "User-Agent": f"ads-api-client/{ads.__version__}",
+    "Content-Type": "application/json",
+}
+
+
+# --------------------------------------------------------------------------
+# Modify `ads` under the hood
+# --------------------------------------------------------------------------
 
 
 def _gen_q(**search_terms):
@@ -36,22 +48,25 @@ def _gen_q(**search_terms):
 
 class _Searcher(ads.SearchQuery):
 
-    _session_response = None
-
-    def execute(self):
+    async def execute(self, session=None):
         """
         Overwrite SearchQuery.execute just to save the response object even if
         there is an error (for better error messages)
+        and to support async execution and shared sessions
         """
         import warnings
 
-        # Only difference from SearchQuery.execute:
-        resp = self.session.get(self.HTTP_ENDPOINT, params=self.query)
-        # TODO this still fails grossly if receiving 503? fails on resp.json()
-        logging.warning(resp.text)
-        logging.warning(resp.json())
+        # If session is not shared, get new one from scratch
+        if session is None:
+            async with aiohttp.ClientSession(headers=_HEADERS) as session:
+                resp = await session.get(self.HTTP_ENDPOINT, params=self.query)
+
+        else:
+            resp = await session.get(self.HTTP_ENDPOINT, params=self.query)
+
         try:
-            self.response = ads.search.SolrResponse.load_http_response(resp)
+            self.response = await _AsyncSolrResponse.load_http_response(resp)
+
         except ads.exceptions.APIResponseError as err:
             err.response = resp
             raise err
@@ -72,6 +87,56 @@ class _Searcher(ads.SearchQuery):
         self._highlights.update(self.response.json.get("highlighting", {}))
 
 
+class _AsyncSolrResponse(ads.search.SolrResponse):
+    """
+    SolrResponse with support for aiohttp response instead of requests
+    """
+
+    def __init__(self, resp_text, resp_json):
+        """
+        De-serialize a json string representing a solr response
+        :param http_response: complete json response from solr
+        :type http_response: request.response
+        """
+        # self._raw = await http_response.text()
+        self._raw = resp_text
+        # self.json = await http_response.json()
+        self.json = resp_json
+        self._articles = None
+        try:
+            self.responseHeader = self.json['responseHeader']
+            self.params = self.json['responseHeader']['params']
+            self.fl = self.params.get('fl', [])
+            if isinstance(self.fl, str):
+                self.fl = self.fl.split(',')
+            self.response = self.json['response']
+            self.numFound = self.response['numFound']
+            self.docs = self.response['docs']
+        except KeyError as e:
+            raise ads.search.SolrResponseParseError("{}".format(e))
+
+    @classmethod
+    async def load_http_response(cls, http_response):
+
+        if not http_response.ok:
+            raise ads.search.APIResponseError(http_response.text)
+
+        raw = await http_response.text()
+        json = await http_response.json()
+
+        c = cls(raw, json)
+        c.response = http_response
+
+        ads.RateLimits.getRateLimits(cls.__name__).set(c.response.headers)
+
+        return c
+
+
+# --------------------------------------------------------------------------
+# Setup and execute queries
+# --------------------------------------------------------------------------
+
+
 class Query:
     '''all the things that go into making an ADS query
 
@@ -88,15 +153,9 @@ class Query:
     def __str__(self):
         return f'{self.name} - {self.arxiv_class}'
 
-    def column_str(self, width=30):
-        import textwrap as tw
-
-        if width is None:
-            return [self.name, self.arxiv_class]
-
-        else:
-            return (tw.wrap(self.name, width)
-                    + tw.wrap(self.arxiv_class, width))
+    @property
+    def column_str(self):
+        return f"{self.name}\n{self.arxiv_class}"
 
     def __init__(self, name, bibstem='arxiv',
                  arxiv_class='astro-ph.*', **search_terms):
@@ -131,7 +190,7 @@ class Query:
             **search_terms
         )
 
-    def execute(self, date=None):
+    async def execute(self, date=None):
 
         if date is None:
             date = datetime.datetime.today()
@@ -140,7 +199,9 @@ class Query:
 
         result = _Searcher(entdate=entdate, fl=self._fl, **self._query_dict)
 
-        result.execute()
+        # TODO should use a base_url here and only get/query in execute
+        async with aiohttp.ClientSession(headers=_HEADERS) as session:
+            await result.execute(session=session)
 
         return QueryResult(self, result)
 
@@ -178,9 +239,9 @@ class QuerySet:
 
         self.queries = queries
 
-    def execute(self, date=None):
+    async def execute(self, date=None):
         self.results = QuerySetResult(
-            [q.execute(date=date) for q in self.queries]
+            [await q.execute(date=date) for q in self.queries]
         )
         return self.results
 

@@ -1,3 +1,4 @@
-from .interface import controller
+from .interface import Controller
+# from .interface import controller
 
-__version__ = "1.1.0"
+__version__ = "2.0.0"

@@ -1,0 +1,36 @@
+ArticleSummary {
+    /*border: solid white;*/
+
+    width: 90%;  /*with query-name width: 10%, is centred*/
+
+    #query-name {
+        width: 15%;
+    }
+
+    #article-title {
+        text-style: bold;
+        text-align: left;
+    }
+
+    #article-bibcode {
+        text-style: underline;
+        text-align: right;
+        margin-left: 2;
+    }
+
+    #article-author {
+        opacity: 50%;
+    }
+
+    #article-indicator {
+        visibility: hidden;
+        &:focus {
+            visibility: visible;
+        }
+    }
+
+}
+
+Footer {
+    background: $background
+}

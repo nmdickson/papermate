@@ -89,26 +89,20 @@ class Article:
             mssg = 'No arXiv ID could be found, cannot construct URL'
             raise RuntimeError(mssg)
 
-    def short_authors(self, width):
+    @property
+    def short_authors(self):
         '''return a string of authors to fit within the width
         if full list fits, use that, otherwise use et al.
         '''
 
-        authors = tw.wrap(self.authors, width)
+        return self.first_author.split(',')[0] + ' et al.'
 
-        if len(authors) > 1:
-            return self.first_author.split(',')[0] + ' et al.'
+    @property
+    def short_abstract(self):
 
-        else:
-            return authors[0]
+        short_abs = tw.shorten(self.abstract, 300, placeholder='...')
 
-    def short_abstract(self, width, *, Nchars=300, end='...'):
-
-        short_abs = tw.shorten(self.abstract, Nchars, placeholder=end)
-
-        wrap_abs = tw.wrap(short_abs, width)
-
-        return wrap_abs
+        return short_abs
 
     def wrap_property(self, prop, Nchars, *, label=False):
         '''wrap the output of a given property to Nchars'''

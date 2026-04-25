@@ -1,0 +1,209 @@
+TripleHeader {
+    dock: top;
+    width: 100%;
+    height: 1;
+
+    #left-align {
+        content-align: left middle;
+        width: 1fr;
+        margin-left: 1;
+    }
+    #centre-align {
+        content-align: center middle;
+        width: 1fr;
+    }
+    #right-align {
+        content-align: right middle;
+        width: 1fr;
+        margin-right: 1;
+    }
+}
+
+ArticleSummary {
+
+    height: auto;
+    margin-top: 2;
+
+    Vertical {
+        width: 1fr;
+        height: auto;
+    }
+    Horizontal {
+        height: auto;
+        width: 1fr;
+    }
+
+    #article-title {
+        width: 1fr;
+    }
+
+    #article-bibcode {
+        width: auto;
+    }
+
+    #article-indicator {
+        width: auto;
+        margin-right: 1;
+        visibility: hidden;
+    }
+
+    &:focus {
+        #article-indicator {
+            visibility: visible;
+        }
+    }
+
+    #query-name {
+        /*width: 15%;*/
+        visibility: hidden;
+        margin-right: 2;
+        margin-left: 1;
+        height: auto;
+        text-align: right;
+    }
+
+    &:first-child {
+        #query-name {
+            visibility: visible;
+        }
+    }
+
+}
+
+QueryList {
+    height: auto;
+    overflow-y: auto;
+    margin-bottom: 1;
+}
+
+ListView {
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-visibility: hidden;
+
+    #date-title {
+        dock: top;
+        width: 100%;
+        background: $background;
+        padding-bottom: 1;
+        text-align: center;
+    }
+
+}
+
+LibraryView {  /*TODO might be a better way*/
+    ArticleSummary {
+        #query-name {
+            &:first-child {
+                visibility: hidden;
+            }
+        }
+    }
+}
+
+
+ArticleDetails {
+    /*border: solid white;*/
+    width: 80%;
+    height: auto;
+
+    margin-top: 1;
+
+    Vertical {
+        width: 1fr;
+        height: auto;
+    }
+
+    #article-title {
+        width: 1fr;
+        margin-bottom: 1;
+        text-style: bold;
+    }
+
+    #article-date {
+        opacity: 50%;
+        margin-left: 5;
+    }
+    #article-author {
+        margin-left: 5;
+    }
+
+    #article-affl {
+        opacity: 50%;
+        margin-left: 5;
+    }
+
+    #article-abstract {
+        margin-top: 1;
+        margin-left: 5;
+    }
+
+}
+
+InfoBox {
+    padding: 1;
+    margin: 1;
+    margin-left: 5;
+
+    border: solid white;
+
+    width: auto;
+    height: auto;
+
+    Vertical {
+        width: auto;
+        height: auto;
+    }
+
+    .info-entries {
+        width: auto;
+        opacity: 50%
+    }
+}
+
+DetailedView {
+
+    #bottom-info {
+        height: auto;
+        dock: bottom;
+    }
+
+    /*Seems a bit hacky but idk*/
+    #spacer {
+        width: 1fr;
+        visibility: hidden;
+    }
+
+    QRCode {
+        width: auto;
+    }
+
+}
+
+
+BaseView {
+    Button {
+        width: 25%;
+        border: solid white;
+        content-align: center middle;
+        padding: 1;
+        &:focus {
+            border: angled white;
+            text-style: bold;
+        }
+    }
+}
+
+
+DateLoadingIndicator {
+    color: $foreground;
+    border: solid white;
+    background: $background;
+    text-align: center;
+}
+
+
+ErrorView {
+    content-align: center middle;
+    text-align: center;
+}
