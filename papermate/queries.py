@@ -211,6 +211,9 @@ class QueryResult:
     def __iter__(self):
         yield from self.articles
 
+    def __len__(self):
+        return len(self.articles)
+
     def __init__(self, query, result):
 
         self.query = query

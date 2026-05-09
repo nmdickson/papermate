@@ -13,7 +13,12 @@ dependencies = [
     'tomli; python_version < "3.11"',
     "art",
     "python-crontab",
-    "pyperclip"
+    "pyperclip",
+    "textual",
+    "aiohttp",
+    "qrcode",  # this should be optional
+    "numpy",
+    "pillow"
 ]
 
 classifiers = [

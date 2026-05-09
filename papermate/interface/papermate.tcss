@@ -10,6 +10,7 @@ ArticleSummary {
     #article-title {
         text-style: bold;
         text-align: left;
+        color: cyan;
     }
 
     #article-bibcode {

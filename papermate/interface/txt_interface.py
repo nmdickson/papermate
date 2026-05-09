@@ -67,6 +67,11 @@ class ChangeView(Message):
         self.view_args = view_args
 
 
+class PreviousView(Message):
+    '''Message to change this view'''
+    pass
+
+
 class CacheResults(Message):
     '''Message to add query results to the cache'''
     def __init__(self, date, query_results: QuerySetResult):
@@ -147,6 +152,8 @@ class ArticleSummary(Widget, can_focus=True):
 
     BINDINGS = [Binding("enter", "select", "select article")]
 
+    FOCUS_ON_CLICK = False
+
     def __init__(self, article, query_name):
         super().__init__()
 
@@ -179,7 +186,52 @@ class ArticleSummary(Widget, can_focus=True):
     def action_select(self):
         self.post_message(ChangeView(DetailedView, [self.article]))
 
-    # def on_mount(self):  # How tf do you get it to start focussed?
+    def on_enter(self, event):
+        '''focus when the mouse enters this article'''
+        self.focus()
+
+class EmptySummary(Widget, can_focus=True):
+    '''
+    articlesummary when there are none
+    '''
+
+    # BINDINGS = [Binding("enter", "select", "select article")]
+
+    FOCUS_ON_CLICK = False
+
+    def __init__(self, query_name):
+        super().__init__()
+
+
+        self.query_col = widgets.Static(query_name, id='query-name')
+        self.indicator = widgets.Static("=>", id='article-indicator')
+
+        self.title = widgets.Static("No articles found", id="article-title")
+        # self.bibcode = widgets.Static(article.bibcode, id="article-bibcode")
+        # self.author = widgets.Static(article.short_authors, id='article-short-author')
+        # self.abstract = widgets.Static(article.short_abstract, id='article-short-abstract')
+
+    def compose(self):
+
+        with Horizontal():
+            yield self.query_col
+            yield self.indicator
+            with Vertical():
+                with Horizontal():
+                    yield self.title
+                    # yield self.bibcode
+
+                # yield self.author
+                # yield self.abstract
+
+    # def on_click(self, event):
+    #     self.action_select()
+
+    # def action_select(self):
+    #     self.post_message(ChangeView(DetailedView, [self.article]))
+
+    # def on_enter(self, event):
+    #     '''focus when the mouse enters this article'''
     #     self.focus()
 
 
@@ -191,23 +243,28 @@ class QueryList(Widget):
         self.queryobj = query  # dont stomp on widget namespaces
         self.results = results
 
+        self.N = len(results)
+
     def compose(self):
-        for article in self.results:
-            yield ArticleSummary(article, query_name=self.queryobj.column_str)
+        if self.N > 0:
+            for article in self.results:
+                yield ArticleSummary(article, query_name=self.queryobj.column_str)
+        else:
+
+            # TODO this need serious work, nothing at all shows up now
+            yield EmptySummary(query_name=self.queryobj.column_str)
 
 
-class ListView(ContentWindow, can_focus=True):
+class ListView(ContentWindow):
+# class ListView(ContentWindow, can_focus=True):
 
-    # TODO when loading articles, make sure to do loading=True
-
-    # TODO these aren't being used for some reason, also in detailedview
-    # I think it's because they aren't focused by default?
-    # it seems to work once the focus is changed by hitting tab
-    # onmount->focus maybe worked? must be better way
+    # TODO if there are no articles, nothing focus, no bindings, and youre stuck
     BINDINGS = [
         Binding(key='q', action='quit', description='Exit'),
-        Binding(key='up', action='focus_previous', description='up'),
-        Binding(key='down', action='focus_next', description='down'),
+        Binding(key='up', action='up', description='up'),
+        Binding(key='down', action='down', description='down'),
+        Binding(key='shift+up', action='up_five', show=False),
+        Binding(key='shift+down', action='down_five', show=False),
         Binding(key='z', action='prev_date', description='Prev. day'),
         Binding(key='x', action='next_date', description='Next day'),
     ]
@@ -223,8 +280,6 @@ class ListView(ContentWindow, can_focus=True):
     @work
     async def execute_and_mount_query(self):
 
-        # TODO check cache first (stores query_res)
-
         self.loading = True
 
         await self.queries.execute(self.date)
@@ -236,6 +291,9 @@ class ListView(ContentWindow, can_focus=True):
 
         for query, results in self.query_res.items():
             self.mount(QueryList(query, results))
+
+        # TODO also need to keep focussed article when doing "back" from details
+        self._focus_on_first()
 
         return self.query_res
 
@@ -259,14 +317,27 @@ class ListView(ContentWindow, can_focus=True):
             logging.info(f'executing query for {self.date=}')
             qr = self.execute_and_mount_query()
 
-        # TODO focusing needs a lot of work. Want Contentwindow to always focus
-        # self.focus()
+        else:
+            self._focus_on_first()
+
+    def _focus_on_first(self):
+        try:
+            self.query('ArticleSummary').first().focus()
+        except NoMatches:
+            self.query('EmptySummary').first().focus()
 
     def get_loading_widget(self):
         return DateLoadingIndicator(humanize_date(self.date, False))
 
     def change_date(self, td: int):
         new_date = self.date + datetime.timedelta(days=td)
+
+        # Check that this isn't a weekend we want to skip
+        # TODO if you start on a sunday and hit back, you'll go to thursday
+        if CONFIG.skip_weekends and new_date.weekday() >= 5:
+            logging.info('Skipping over the weekend')
+            new_date += datetime.timedelta(days=2 * td)
+
         self.post_message(ChangeView(ListView, [new_date,]))
 
     def action_prev_date(self):
@@ -274,6 +345,20 @@ class ListView(ContentWindow, can_focus=True):
 
     def action_next_date(self):
         self.change_date(td=1)
+
+    def action_up(self):
+        self.screen.focus_previous()
+
+    def action_down(self):
+        self.screen.focus_next()
+
+    def action_up_five(self):
+        for _ in range(5):
+            self.screen.focus_previous()
+
+    def action_down_five(self):
+        for _ in range(5):
+            self.screen.focus_next()
 
 
 class LibraryView(ListView):
@@ -380,8 +465,8 @@ class DetailedView(ContentWindow, can_focus=True):
             yield QRCode(self.article.url, inverse=True)
 
     def action_back(self):
-        # TODO how to keep the date handy?
-        self.post_message(ChangeView(ListView, ['last',]))
+        # TODO need to focus the same article
+        self.post_message(PreviousView())
 
     def action_open(self):
         # TODO for some reason there is a big delay on these actions?
@@ -409,16 +494,13 @@ class ErrorView(ContentWindow):
     title = 'Error'
     message = 'Error message'
 
-    # TODO need to remove bindings from ContentWindow
-    #   Maybe just don't inherit from that in the first place?
-    #   Or, more likely, those bindings should go in the specific views not cont
     def render(self):
         return f"[bold]{self.title}[/bold]\n\n{self.message}"
 
-    def on_mount(self):
-        # TODO change the title in the titlebar to this title
-        #   may require passing meassge up to app actually
-        return super().on_mount()
+    # def on_mount(self):
+    #     # TODO change the title in the titlebar to this title
+    #     #   may require passing meassge up to app actually
+    #     return super().on_mount()
 
 
 class NoConfigView(ErrorView):
@@ -495,7 +577,14 @@ class Controller(App):
 
         self._start_view_mssg = ChangeView(initial_view, *initial_args)
 
+        self._view_history = []
+
     async def on_change_view(self, message: ChangeView):
+        # TODO I think this needs to put up a loading screen actually
+
+        # self.loading = True
+
+        self._view_history.append(message)
 
         new_view = message.to_view(*(message.view_args or []))
 
@@ -505,6 +594,15 @@ class Controller(App):
             pass
 
         await self.mount(new_view)
+
+        if new_view.can_focus:
+            new_view.focus()
+
+        # self.loading = False
+
+    # TODO theres definitely a better way to do this
+    async def on_previous_view(self, message: ChangeView):
+        await self.on_change_view(self._view_history[-2])
 
     def on_cache_results(self, message: CacheResults):
         CACHE.cache_results(message.date, message.query_results)
