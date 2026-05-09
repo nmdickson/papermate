@@ -193,7 +193,7 @@ class Query:
     async def execute(self, date=None):
 
         if date is None:
-            date = datetime.datetime.today()
+            date = datetime.date.today()
 
         entdate = f'{date:%Y-%m-%d}z00:00'
 

@@ -20,7 +20,7 @@ from ..queries import QuerySet, Library, QuerySetResult
 from ..utils import CONFIG, get_user_libraries, create_default_library
 from ..utils import prev, BidirectionalCycler, Cache, DateCache
 
-from .txt_widgets import ContentWindow, QRCode, TripleHeader, DateLoadingIndicator
+from .txt_widgets import ContentWindow, QRCode, TripleHeader, DateLoadingIndicator, DateSelectModal
 
 
 __all__ = ["ChangeView", "CacheResults", "BaseView", "ListView", "LibraryView",
@@ -34,12 +34,12 @@ __all__ = ["ChangeView", "CacheResults", "BaseView", "ListView", "LibraryView",
 CACHE = DateCache()
 
 
-def humanize_date(date: datetime.datetime, relative: bool = True) -> str:
+def humanize_date(date: datetime.date, relative: bool = True) -> str:
 
     out = date.strftime('%A %B %-d, %Y')
 
     if relative:
-        diff = (datetime.datetime.today().date() - date.date()).days
+        diff = (datetime.date.today() - date).days
 
         suffix = 'ago' if diff >= 0 else 'from now'
 
@@ -112,8 +112,8 @@ class BaseView(ContentWindow):
 
     @on(widgets.Button.Pressed, "#daily")
     def daily_pressed(self, event: widgets.Button.Pressed) -> None:
-        self.post_message(ChangeView(ListView, [datetime.datetime.today() - datetime.timedelta(3)]))
-        # self.post_message(ChangeView(ListView, [datetime.datetime.today()]))
+        # self.post_message(ChangeView(ListView, [datetime.datetime.today() - datetime.timedelta(5)]))
+        self.post_message(ChangeView(ListView, [datetime.date.today()]))
 
     @on(widgets.Button.Pressed, "#library")
     def library_pressed(self, event: widgets.Button.Pressed) -> None:
@@ -189,6 +189,7 @@ class ArticleSummary(Widget, can_focus=True):
     def on_enter(self, event):
         '''focus when the mouse enters this article'''
         self.focus()
+
 
 class EmptySummary(Widget, can_focus=True):
     '''
@@ -267,9 +268,10 @@ class ListView(ContentWindow):
         Binding(key='shift+down', action='down_five', show=False),
         Binding(key='z', action='prev_date', description='Prev. day'),
         Binding(key='x', action='next_date', description='Next day'),
+        Binding(key='g', action='goto_date', description='goto date'),
     ]
 
-    def __init__(self, date: datetime.datetime):
+    def __init__(self, date: datetime.date):
         super().__init__()
 
         self.date = date
@@ -360,6 +362,13 @@ class ListView(ContentWindow):
         for _ in range(5):
             self.screen.focus_next()
 
+    def action_goto_date(self) -> None:
+
+        def post_goto(new_date) -> None:
+            self.post_message(ChangeView(ListView, [new_date,]))
+
+        self.app.push_screen(DateSelectModal(), post_goto)
+
 
 class LibraryView(ListView):
 
@@ -380,7 +389,7 @@ class LibraryView(ListView):
 
 
     def __init__(self, library: Library):
-        date = datetime.datetime.today()
+        date = datetime.date.today()
 
         self.title = f'{library.name}'
 

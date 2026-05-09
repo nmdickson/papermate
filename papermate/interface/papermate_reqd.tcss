@@ -207,3 +207,8 @@ ErrorView {
     content-align: center middle;
     text-align: center;
 }
+
+
+DateSelectModal {
+    align: center middle;
+}

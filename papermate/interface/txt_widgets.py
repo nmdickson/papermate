@@ -6,7 +6,11 @@ from textual.widget import Widget
 from textual.containers import Horizontal, Vertical, Center
 from textual.dom import NoScreen
 from textual import events, on
+from textual.screen import ModalScreen
 from textual.binding import Binding
+
+from textual_timepiece.pickers import DateSelect
+from whenever import Date
 
 
 # HACKY AF WAY TO ADD NEW BORDER< SHOULD MAKE NEW BUTTON WIDGET??
@@ -42,7 +46,7 @@ class TripleHeader(widgets.Static):
 
         self.title = ''
 
-        self.date = datetime.datetime.today().strftime('%Y-%m-%d ')
+        self.date = datetime.date.today().strftime('%Y-%m-%d ')
 
 
 class QRCode(widgets.Static):
@@ -98,6 +102,18 @@ class DateLoadingIndicator(widgets.LoadingIndicator):
         from rich.text import Text
         mssg = f"\n{self.date}" or ''
         return Text(f'Loading articles for{mssg}\n\n') + super().render()
+
+
+class DateSelectModal(ModalScreen):
+
+    def compose(self) -> ComposeResult:
+
+        yield DateSelect(Date.today_in_system_tz())
+
+    @on(DateSelect.Changed)
+    def on_date_changed(self, message: DateSelect.Changed) -> None:
+        # Note timepiece requires outdated whenever, in future use `to_stdlib`
+        self.dismiss(message.widget.date.py_date())
 
 
 class ContentWindow(Widget):
