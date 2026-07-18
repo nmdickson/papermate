@@ -107,12 +107,17 @@ class SplashScreen(ContentWindow):
 
 class BaseView(ContentWindow):
 
-    class Exit(Message):
-        pass
+    BINDINGS = [
+        Binding(key='up', action='up', description='up'),
+        Binding(key='down', action='down', description='down')
+    ]
+
+    class MenuButton(widgets.Button):
+        def on_enter(self, event):
+            self.focus()
 
     @on(widgets.Button.Pressed, "#daily")
     def daily_pressed(self, event: widgets.Button.Pressed) -> None:
-        # self.post_message(ChangeView(ListView, [datetime.datetime.today() - datetime.timedelta(5)]))
         self.post_message(ChangeView(ListView, [datetime.date.today()]))
 
     @on(widgets.Button.Pressed, "#library")
@@ -121,14 +126,23 @@ class BaseView(ContentWindow):
 
     @on(widgets.Button.Pressed, "#exit")
     def exit_pressed(self, event: widgets.Button.Pressed) -> None:
-        self.post_message(self.Exit())
+        self.app.exit()
+
+    def action_up(self):
+        self.screen.focus_previous()
+
+    def action_down(self):
+        self.screen.focus_next()
 
     def compose(self):
         with Center():
-            yield widgets.Button("Daily", id="daily")
-            yield widgets.Button("Library", id="library")
-            yield widgets.Button("Help", id="help")
-            yield widgets.Button("Exit", id='exit')
+            yield self.MenuButton("Daily", id="daily")
+            yield self.MenuButton("Library", id="library")
+            yield self.MenuButton("Help", id="help")
+            yield self.MenuButton("Exit", id='exit')
+
+    def on_mount(self):
+        self.query_one("#daily").focus()
 
 
 # --------------------------------------------------------------------------
@@ -259,7 +273,6 @@ class QueryList(Widget):
 class ListView(ContentWindow):
 # class ListView(ContentWindow, can_focus=True):
 
-    # TODO if there are no articles, nothing focus, no bindings, and youre stuck
     BINDINGS = [
         Binding(key='q', action='quit', description='Exit'),
         Binding(key='up', action='up', description='up'),

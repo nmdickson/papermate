@@ -182,7 +182,7 @@ DetailedView {
 
 
 BaseView {
-    Button {
+    MenuButton {
         width: 25%;
         border: solid white;
         content-align: center middle;
