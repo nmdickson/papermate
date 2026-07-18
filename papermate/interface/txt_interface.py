@@ -480,7 +480,10 @@ class DetailedView(ContentWindow, can_focus=True):
         with Horizontal(id="bottom-info"):
             yield InfoBox(self.article)
             yield widgets.Placeholder(id='spacer')
-            yield QRCode(self.article.url, inverse=True)
+
+            # TODO this does vertically displace things slightly
+            if CONFIG.show_qr:
+                yield QRCode(self.article.url, inverse=True)
 
     def action_back(self):
         # TODO need to focus the same article

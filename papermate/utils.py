@@ -78,7 +78,8 @@ SETTINGS_DEFAULTS = {
     "ads_api_key": None,
     "reminder": False,
     "reminder_times": [["Mon", "Tue", "Wed", "Thu", "Fri"], [9]],
-    "invert_colours": False
+    "invert_colours": False,  # todo get rid of this and other curses settings
+    "show_qr": True
 }
 
 
