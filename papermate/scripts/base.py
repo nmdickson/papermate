@@ -29,7 +29,7 @@ def main():
 
 
 def daily():
-    date = datetime.datetime.today()
+    date = datetime.date.today()
     start_app(ListView, [date, ])
 
 

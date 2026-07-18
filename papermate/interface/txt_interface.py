@@ -331,14 +331,23 @@ class ListView(ContentWindow):
     def get_loading_widget(self):
         return DateLoadingIndicator(humanize_date(self.date, False))
 
-    def change_date(self, td: int):
+    def change_date(self, td: int) -> None:
         new_date = self.date + datetime.timedelta(days=td)
+
+        logging.info(f"Changing date by {td=} to {new_date}")
 
         # Check that this isn't a weekend we want to skip
         # TODO if you start on a sunday and hit back, you'll go to thursday
         if CONFIG.skip_weekends and new_date.weekday() >= 5:
-            logging.info('Skipping over the weekend')
             new_date += datetime.timedelta(days=2 * td)
+            logging.info(f"Skipping over the weekend, to {new_date}")
+
+        # Check that this date isn't in the future
+        if new_date > (today := datetime.datetime.today().date()):
+            mssg = f"Can't move into the future ({new_date} > {today})"
+            logging.info(mssg)
+            self.app.notify(mssg, title='Cannot change date', severity='error')
+            return
 
         self.post_message(ChangeView(ListView, [new_date,]))
 
